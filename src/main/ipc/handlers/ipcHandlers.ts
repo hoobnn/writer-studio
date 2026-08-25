@@ -38,6 +38,7 @@ import { translateHandlers } from './translate'
 import { webSearchHandlers } from './webSearch'
 import { webviewHandlers } from './webview'
 import { windowHandlers } from './window'
+import { writerHandlers } from './writer'
 
 /**
  * Global request handler map — exactly one handler per declared route, exhaustive
@@ -85,5 +86,6 @@ export const ipcHandlers: IpcHandlersFor<IpcRequestSchemas> = {
   ...translateHandlers,
   ...webSearchHandlers,
   ...webviewHandlers,
-  ...windowHandlers
+  ...windowHandlers,
+  ...writerHandlers
 }

@@ -36,6 +36,7 @@ import { type TranslateEventSchemas, translateRequestSchemas } from './translate
 import { webSearchRequestSchemas } from './webSearch'
 import { webviewRequestSchemas } from './webview'
 import { type WindowEventSchemas, windowRequestSchemas } from './window'
+import { writerRequestSchemas } from './writer'
 
 /**
  * Global request registry — the single source of truth the main router parses
@@ -81,7 +82,8 @@ export const ipcRequestSchemas = {
   ...translateRequestSchemas,
   ...webSearchRequestSchemas,
   ...webviewRequestSchemas,
-  ...windowRequestSchemas
+  ...windowRequestSchemas,
+  ...writerRequestSchemas
 } satisfies Record<string, RouteDef>
 
 export type IpcRequestSchemas = typeof ipcRequestSchemas

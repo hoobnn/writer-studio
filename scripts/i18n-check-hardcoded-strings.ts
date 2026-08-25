@@ -11,7 +11,7 @@ const RENDERER_DIR = path.join(__dirname, '../src/renderer')
 const MAIN_DIR = path.join(__dirname, '../src/main')
 const EXTENSIONS = ['.tsx', '.ts']
 const IGNORED_DIRS = ['__tests__', 'node_modules', 'i18n', 'locales', 'types', 'assets']
-const IGNORED_FILES = ['*.test.ts', '*.test.tsx', '*.d.ts', '*prompts*.ts']
+const IGNORED_FILES = ['*.test.ts', '*.test.tsx', '*.d.ts', '*prompts*.ts', '*Prompts*.ts']
 
 // 'content' is handled specially - only checked for specific components
 const UI_ATTRIBUTES = [
