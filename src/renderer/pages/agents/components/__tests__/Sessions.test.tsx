@@ -3548,6 +3548,7 @@ describe('Sessions', () => {
 
     await vi.waitFor(() =>
       expect(preferenceMocks.setPreference).toHaveBeenCalledWith('ui.sidebar.favorites', [
+        { type: 'app', id: 'writer' },
         { type: 'app', id: 'assistants' },
         { type: 'agent', id: 'agent-a' }
       ])
@@ -3580,6 +3581,7 @@ describe('Sessions', () => {
 
     await vi.waitFor(() =>
       expect(preferenceMocks.setPreference).toHaveBeenCalledWith('ui.sidebar.favorites', [
+        { type: 'app', id: 'writer' },
         { type: 'app', id: 'assistants' }
       ])
     )

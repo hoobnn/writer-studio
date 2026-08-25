@@ -16,6 +16,7 @@ vi.mock('@renderer/i18n/resolver', () => ({
         'title.files': '文件',
         'title.code': 'Code',
         'title.notes': '笔记',
+        'writer.title': 'AI 写作',
         'settings.about.releases.title': '更新日志',
         'title.settings': '设置'
       }
@@ -40,6 +41,7 @@ describe('routeTitle', () => {
   describe('getDefaultRouteTitle', () => {
     describe('exact route matches', () => {
       it.each([
+        ['/app/writer', 'AI 写作'],
         ['/app/chat', '对话'],
         ['/app/agents', '工作'],
         ['/app/paintings', '绘画'],
@@ -116,6 +118,7 @@ describe('routeTitle', () => {
   describe('getRouteTitleKey', () => {
     describe('exact matches', () => {
       it.each([
+        ['/app/writer', 'writer.title'],
         ['/app/chat', 'agent.session.group.conversation'],
         ['/app/agents', 'title.work'],
         ['/app/release-notes', 'settings.about.releases.title'],
@@ -145,6 +148,7 @@ describe('routeTitle', () => {
   describe('isTopLevelRoute', () => {
     it('returns true only for bare top-level route tabs', () => {
       expect(isTopLevelRoute('/app/chat')).toBe(true)
+      expect(isTopLevelRoute('/app/writer')).toBe(true)
       expect(isTopLevelRoute('/app/agents')).toBe(true)
       expect(isTopLevelRoute('/app/release-notes')).toBe(true)
       expect(isTopLevelRoute('/app/chat?topicId=123&view=message')).toBe(false)

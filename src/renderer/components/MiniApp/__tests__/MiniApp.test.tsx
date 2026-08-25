@@ -158,6 +158,7 @@ describe('MiniApp launchpad pin menu', () => {
     fireEvent.click(screen.getByRole('button', { name: 'miniApp.add_to_sidebar' }))
 
     expect(mocks.setSidebarFavorites).toHaveBeenCalledWith([
+      { type: 'app', id: 'writer' },
       { type: 'app', id: 'assistants' },
       { type: 'mini_app', id: 'calculator' }
     ])
@@ -188,6 +189,7 @@ describe('MiniApp launchpad pin menu', () => {
     fireEvent.click(screen.getByRole('button', { name: 'miniApp.remove_from_sidebar' }))
 
     expect(mocks.setSidebarFavorites).toHaveBeenCalledWith([
+      { type: 'app', id: 'writer' },
       { type: 'app', id: 'assistants' },
       { type: 'mini_app', id: 'weather' }
     ])

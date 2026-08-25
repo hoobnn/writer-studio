@@ -27,7 +27,10 @@ describe('useSidebarFavorites', () => {
   })
 
   describe('entity favorites (agents / assistants)', () => {
-    const REQUIRED_ASSISTANTS = { type: 'app', id: 'assistants' } as const
+    const REQUIRED_SIDEBAR_APPS = [
+      { type: 'app', id: 'writer' },
+      { type: 'app', id: 'assistants' }
+    ] as const
 
     it('toggles an agent favorite on and exposes it in agentFavoriteIds', () => {
       const setFavorites = vi.fn().mockResolvedValue(undefined)
@@ -39,9 +42,9 @@ describe('useSidebarFavorites', () => {
         result.current.toggleAgent('agent-1')
       })
 
-      // Mutations operate on the ordered visible list, so the required
-      // assistants app is persisted alongside the newly added entity.
-      expect(setFavorites).toHaveBeenCalledWith([REQUIRED_ASSISTANTS, { type: 'agent', id: 'agent-1' }])
+      // Mutations operate on the ordered visible list, so required apps are
+      // persisted in normalization order alongside the newly added entity.
+      expect(setFavorites).toHaveBeenCalledWith([...REQUIRED_SIDEBAR_APPS, { type: 'agent', id: 'agent-1' }])
     })
 
     it('toggles an assistant favorite off and removes it from assistantFavoriteIds', () => {
@@ -59,7 +62,7 @@ describe('useSidebarFavorites', () => {
         result.current.toggleAssistant('assistant-1')
       })
 
-      expect(setFavorites).toHaveBeenCalledWith([REQUIRED_ASSISTANTS])
+      expect(setFavorites).toHaveBeenCalledWith(REQUIRED_SIDEBAR_APPS)
     })
 
     it('segregates agent and assistant favorite ids by type', () => {
@@ -92,7 +95,7 @@ describe('useSidebarFavorites', () => {
         result.current.removeAgent('agent-1')
       })
 
-      expect(setFavorites).toHaveBeenCalledWith([REQUIRED_ASSISTANTS, { type: 'assistant', id: 'assistant-1' }])
+      expect(setFavorites).toHaveBeenCalledWith([...REQUIRED_SIDEBAR_APPS, { type: 'assistant', id: 'assistant-1' }])
     })
 
     it('skips removing an assistant that is not favorited', () => {

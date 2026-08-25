@@ -27,13 +27,13 @@ const assistantFavorite = (id: string): SidebarFavoriteItem => ({ type: 'assista
 
 describe('sidebar config helpers', () => {
   it('keeps the fixed sidebar app order available', () => {
-    expect(SIDEBAR_FAVORITE_ORDER.slice(0, 5)).toEqual(['assistants', 'agents', 'paintings', 'translate', 'mini_app'])
+    expect(SIDEBAR_FAVORITE_ORDER.slice(0, 5)).toEqual(['writer', 'assistants', 'agents', 'paintings', 'translate'])
   })
 
   it('preserves the preference order when reading ordered visible sidebar favorites', () => {
     expect(
       getOrderedVisibleSidebarFavorites([appFavorite('translate'), appFavorite('assistants'), appFavorite('agents')])
-    ).toEqual(['translate', 'assistants', 'agents'])
+    ).toEqual(['writer', 'translate', 'assistants', 'agents'])
   })
 
   it('sanitizes ordered visible sidebar favorites and keeps required favorites visible', () => {
@@ -44,7 +44,7 @@ describe('sidebar config helpers', () => {
         appFavorite('translate'),
         appFavorite('agents')
       ])
-    ).toEqual(['assistants', 'translate', 'agents'])
+    ).toEqual(['writer', 'assistants', 'translate', 'agents'])
   })
 
   it('ignores mini app favorites when reading system sidebar favorites', () => {
@@ -55,7 +55,7 @@ describe('sidebar config helpers', () => {
         appFavorite('assistants'),
         appFavorite('agents')
       ])
-    ).toEqual(['translate', 'assistants', 'agents'])
+    ).toEqual(['writer', 'translate', 'assistants', 'agents'])
   })
 
   it('returns the full mixed list interleaved in stored order with required apps forced in', () => {
@@ -66,6 +66,7 @@ describe('sidebar config helpers', () => {
         appFavorite('agents')
       ])
     ).toEqual([
+      appFavorite('writer'),
       appFavorite('assistants'),
       appFavorite('translate'),
       miniAppFavorite('calculator'),
@@ -75,6 +76,7 @@ describe('sidebar config helpers', () => {
 
   it('does not prepend a required app that is already present at any position', () => {
     expect(getOrderedVisibleSidebarFavoriteItems([miniAppFavorite('calculator'), appFavorite('assistants')])).toEqual([
+      appFavorite('writer'),
       miniAppFavorite('calculator'),
       appFavorite('assistants')
     ])
@@ -126,6 +128,8 @@ describe('sidebar config helpers', () => {
   })
 
   it('resolves menu paths and active items with the paintings provider route', () => {
+    expect(getSidebarMenuPath('writer', 'zhipu')).toBe('/app/writer')
+    expect(resolveSidebarActiveItem('/app/writer')).toBe('writer')
     expect(getSidebarMenuPath('paintings', 'zhipu')).toBe('/app/paintings/zhipu')
     expect(resolveSidebarActiveItem('/app/paintings/zhipu')).toBe('paintings')
   })
@@ -153,6 +157,7 @@ describe('sidebar config helpers', () => {
 describe('sidebar favorites mutations', () => {
   it('pins an app to the very end of the mixed list', () => {
     expect(setSidebarAppPinned([appFavorite('assistants'), miniAppFavorite('calculator')], 'knowledge', true)).toEqual([
+      appFavorite('writer'),
       appFavorite('assistants'),
       miniAppFavorite('calculator'),
       appFavorite('knowledge')
@@ -166,11 +171,12 @@ describe('sidebar favorites mutations', () => {
         'knowledge',
         false
       )
-    ).toEqual([appFavorite('assistants'), miniAppFavorite('calculator')])
+    ).toEqual([appFavorite('writer'), appFavorite('assistants'), miniAppFavorite('calculator')])
   })
 
   it('never unpins a required app', () => {
     expect(setSidebarAppPinned([appFavorite('assistants'), appFavorite('knowledge')], 'assistants', false)).toEqual([
+      appFavorite('writer'),
       appFavorite('assistants'),
       appFavorite('knowledge')
     ])
@@ -178,8 +184,17 @@ describe('sidebar favorites mutations', () => {
 
   it('toggles a mini app on and off, preserving apps', () => {
     const added = toggleSidebarMiniApp([appFavorite('assistants'), miniAppFavorite('calculator')], 'weather')
-    expect(added).toEqual([appFavorite('assistants'), miniAppFavorite('calculator'), miniAppFavorite('weather')])
-    expect(toggleSidebarMiniApp(added, 'calculator')).toEqual([appFavorite('assistants'), miniAppFavorite('weather')])
+    expect(added).toEqual([
+      appFavorite('writer'),
+      appFavorite('assistants'),
+      miniAppFavorite('calculator'),
+      miniAppFavorite('weather')
+    ])
+    expect(toggleSidebarMiniApp(added, 'calculator')).toEqual([
+      appFavorite('writer'),
+      appFavorite('assistants'),
+      miniAppFavorite('weather')
+    ])
   })
 
   it('removes a mini app while preserving apps and other mini apps', () => {
@@ -188,7 +203,7 @@ describe('sidebar favorites mutations', () => {
         [appFavorite('assistants'), miniAppFavorite('calculator'), miniAppFavorite('weather')],
         'calculator'
       )
-    ).toEqual([appFavorite('assistants'), miniAppFavorite('weather')])
+    ).toEqual([appFavorite('writer'), appFavorite('assistants'), miniAppFavorite('weather')])
   })
 
   it('preserves forward-compatible unknown items when mutating favorites', () => {
@@ -200,6 +215,7 @@ describe('sidebar favorites mutations', () => {
     } as unknown as SidebarFavoriteItem
 
     expect(toggleSidebarMiniApp([appFavorite('assistants'), group], 'weather')).toEqual([
+      appFavorite('writer'),
       appFavorite('assistants'),
       miniAppFavorite('weather'),
       group
@@ -213,7 +229,12 @@ describe('sidebar favorites mutations', () => {
         agentFavorite('agent-1'),
         assistantFavorite('assistant-1')
       ])
-    ).toEqual([appFavorite('assistants'), agentFavorite('agent-1'), assistantFavorite('assistant-1')])
+    ).toEqual([
+      appFavorite('writer'),
+      appFavorite('assistants'),
+      agentFavorite('agent-1'),
+      assistantFavorite('assistant-1')
+    ])
   })
 
   it('drops agent/assistant favorites without an id during normalization', () => {
@@ -232,9 +253,15 @@ describe('sidebar favorites mutations', () => {
       'agent',
       'agent-1'
     )
-    expect(added).toEqual([appFavorite('assistants'), assistantFavorite('assistant-1'), agentFavorite('agent-1')])
+    expect(added).toEqual([
+      appFavorite('writer'),
+      appFavorite('assistants'),
+      assistantFavorite('assistant-1'),
+      agentFavorite('agent-1')
+    ])
 
     expect(toggleSidebarEntityFavorite(added, 'assistant', 'assistant-1')).toEqual([
+      appFavorite('writer'),
       appFavorite('assistants'),
       agentFavorite('agent-1')
     ])
@@ -247,7 +274,7 @@ describe('sidebar favorites mutations', () => {
         'agent',
         'agent-1'
       )
-    ).toEqual([appFavorite('assistants'), assistantFavorite('assistant-1')])
+    ).toEqual([appFavorite('writer'), appFavorite('assistants'), assistantFavorite('assistant-1')])
   })
 
   it('does not treat known agent/assistant favorites as forward-compatible unknown items on mutation', () => {
@@ -256,10 +283,12 @@ describe('sidebar favorites mutations', () => {
     // Mutations operate on the ordered visible list, so the required assistants
     // app is prepended next to the preserved future-typed group item.
     expect(toggleSidebarEntityFavorite([agentFavorite('agent-1'), group], 'agent', 'agent-1')).toEqual([
+      appFavorite('writer'),
       appFavorite('assistants'),
       group
     ])
     expect(toggleSidebarEntityFavorite([assistantFavorite('assistant-1'), group], 'assistant', 'assistant-1')).toEqual([
+      appFavorite('writer'),
       appFavorite('assistants'),
       group
     ])
@@ -273,7 +302,12 @@ describe('reorderSidebarFavorites (mixed cross-type reorder)', () => {
         [appFavorite('assistants'), appFavorite('knowledge'), miniAppFavorite('calculator')],
         [miniAppFavorite('calculator'), appFavorite('assistants'), appFavorite('knowledge')]
       )
-    ).toEqual([miniAppFavorite('calculator'), appFavorite('assistants'), appFavorite('knowledge')])
+    ).toEqual([
+      miniAppFavorite('calculator'),
+      appFavorite('assistants'),
+      appFavorite('knowledge'),
+      appFavorite('writer')
+    ])
   })
 
   it('keeps stored favorites missing from a partial order at the end', () => {
@@ -282,7 +316,12 @@ describe('reorderSidebarFavorites (mixed cross-type reorder)', () => {
         [appFavorite('assistants'), miniAppFavorite('calculator'), miniAppFavorite('stale')],
         [miniAppFavorite('calculator'), appFavorite('assistants')]
       )
-    ).toEqual([miniAppFavorite('calculator'), appFavorite('assistants'), miniAppFavorite('stale')])
+    ).toEqual([
+      miniAppFavorite('calculator'),
+      appFavorite('assistants'),
+      appFavorite('writer'),
+      miniAppFavorite('stale')
+    ])
   })
 
   it('drops requested items that are not stored favorites', () => {
@@ -291,13 +330,14 @@ describe('reorderSidebarFavorites (mixed cross-type reorder)', () => {
         [appFavorite('assistants'), miniAppFavorite('calculator')],
         [miniAppFavorite('ghost'), miniAppFavorite('calculator'), appFavorite('assistants')]
       )
-    ).toEqual([miniAppFavorite('calculator'), appFavorite('assistants')])
+    ).toEqual([miniAppFavorite('calculator'), appFavorite('assistants'), appFavorite('writer')])
   })
 
   it('keeps a required app once when the requested reorder omits it', () => {
     const reordered = reorderSidebarFavorites([appFavorite('knowledge')], [appFavorite('knowledge')])
 
-    expect(reordered).toEqual([appFavorite('knowledge'), appFavorite('assistants')])
+    expect(reordered).toEqual([appFavorite('knowledge'), appFavorite('writer'), appFavorite('assistants')])
+    expect(reordered.filter((item) => item.type === 'app' && item.id === 'writer')).toHaveLength(1)
     expect(reordered.filter((item) => item.type === 'app' && item.id === 'assistants')).toHaveLength(1)
   })
 })

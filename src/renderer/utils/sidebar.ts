@@ -62,6 +62,10 @@ export function isMessageOnlyConversationUrl(url: string): boolean {
  */
 const SIDEBAR_APP_DEFINITIONS = [
   {
+    id: 'writer',
+    routePrefix: '/app/writer'
+  },
+  {
     id: 'assistants',
     // `routePrefix` must stay a string literal — the knowledge-manifest generator reads it
     // with ts-morph. `conversationRoute` below carries the same path from the shared contract.
@@ -148,7 +152,7 @@ export const SIDEBAR_FAVORITE_ORDER: SidebarAppId[] = SIDEBAR_APPS.map((app) => 
  * 这些收藏项必须始终在侧边栏中可见
  * 抽取为参数方便未来扩展
  */
-export const REQUIRED_SIDEBAR_FAVORITES: SidebarAppId[] = ['assistants']
+export const REQUIRED_SIDEBAR_FAVORITES: SidebarAppId[] = ['writer', 'assistants']
 
 const sidebarFavoriteSet = new Set<SidebarAppId>(SIDEBAR_FAVORITE_ORDER)
 

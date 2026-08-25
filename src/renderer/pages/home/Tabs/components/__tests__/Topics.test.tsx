@@ -3367,6 +3367,7 @@ describe('Topics', () => {
 
     await vi.waitFor(() =>
       expect(MockUsePreferenceUtils.getPreferenceValue('ui.sidebar.favorites' as never)).toEqual([
+        { type: 'app', id: 'writer' },
         { type: 'app', id: 'assistants' },
         { type: 'assistant', id: 'assistant-1' }
       ])
@@ -3389,6 +3390,7 @@ describe('Topics', () => {
 
     await vi.waitFor(() =>
       expect(MockUsePreferenceUtils.getPreferenceValue('ui.sidebar.favorites' as never)).toEqual([
+        { type: 'app', id: 'writer' },
         { type: 'app', id: 'assistants' }
       ])
     )

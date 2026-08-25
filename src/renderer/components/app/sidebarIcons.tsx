@@ -1,6 +1,7 @@
 import type { SidebarAppId } from '@renderer/utils/sidebar'
 import type { LucideIcon } from 'lucide-react'
 import {
+  BookOpenText,
   Code,
   FileSearch,
   Folder,
@@ -19,6 +20,7 @@ import {
  * components; the navigation data and logic live in `@renderer/utils/sidebar`.
  */
 export const SIDEBAR_ICON_COMPONENTS: Record<SidebarAppId, LucideIcon> = {
+  writer: BookOpenText,
   assistants: MessageSquare,
   agents: MousePointerClick,
   paintings: Palette,
