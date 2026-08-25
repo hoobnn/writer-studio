@@ -8,6 +8,7 @@ import {
   oauthWithSiliconFlow
 } from '@renderer/services/oauth'
 import { toast } from '@renderer/services/toast'
+import { DISTRIBUTION } from '@shared/utils/distribution'
 import type { API_KEY_OAUTH_PROVIDER_IDS } from '@shared/utils/provider'
 import type { FC } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -37,6 +38,8 @@ interface Props extends React.ComponentProps<typeof Button> {
 
 const OauthButton: FC<Props> = ({ provider, onSuccess, ...buttonProps }) => {
   const { t } = useTranslation()
+
+  if (!DISTRIBUTION.vendorOAuthEnabled && provider.id === 'ppio') return null
 
   const onAuth = () => {
     const handleSuccess = (key: string) => {

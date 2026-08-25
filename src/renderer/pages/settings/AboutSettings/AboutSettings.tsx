@@ -9,7 +9,7 @@ import {
   Tooltip
 } from '@cherrystudio/ui'
 import { usePreference } from '@data/hooks/usePreference'
-import AppLogo from '@renderer/assets/images/logo.png'
+import AppLogo from '@renderer/assets/images/apps/launchpad-writer.svg'
 import { FeedbackDialog } from '@renderer/components/feedback/FeedbackDialog'
 import LogoAvatar from '@renderer/components/icons/LogoAvatar'
 import IndicatorLight from '@renderer/components/IndicatorLight'
@@ -30,6 +30,7 @@ import { ipcApi } from '@renderer/ipc'
 import { toast } from '@renderer/services/toast'
 import { cn } from '@renderer/utils/style'
 import { UpgradeChannel } from '@shared/data/preference/preferenceTypes'
+import { DISTRIBUTION } from '@shared/utils/distribution'
 import { debounce } from 'es-toolkit/compat'
 import {
   BadgeQuestionMark,
@@ -213,7 +214,7 @@ const AboutSettings: FC = () => {
           <div className="flex min-w-0 flex-1 items-center gap-3">
             <button
               type="button"
-              aria-label="Cherry Studio"
+              aria-label={DISTRIBUTION.productName}
               onClick={() => onOpenWebsite('https://github.com/CherryHQ/cherry-studio')}
               className="relative cursor-pointer">
               {appUpdateState.downloading && appUpdateState.downloadProgress > 0 && (
@@ -232,8 +233,8 @@ const AboutSettings: FC = () => {
             </button>
 
             <div className="flex min-h-18 flex-col items-start justify-center">
-              <div className="mb-1 font-bold text-foreground text-lg">Cherry Studio</div>
-              <div className="text-muted-foreground text-sm">{t('settings.about.description')}</div>
+              <div className="mb-1 font-bold text-foreground text-lg">{DISTRIBUTION.productName}</div>
+              <div className="text-muted-foreground text-sm">{t('writer.distribution.description')}</div>
               <button
                 type="button"
                 aria-label={t('settings.about.releases.title')}
@@ -246,7 +247,7 @@ const AboutSettings: FC = () => {
             </div>
           </div>
 
-          {!isPortable && (
+          {DISTRIBUTION.updatesEnabled && !isPortable && (
             <div className="flex shrink-0 items-center justify-end">
               <Button
                 size="sm"
@@ -269,7 +270,7 @@ const AboutSettings: FC = () => {
           )}
         </div>
 
-        {!isPortable && (
+        {DISTRIBUTION.updatesEnabled && !isPortable && (
           <>
             <Divider className="my-3" />
             <SettingRow className="gap-3">
@@ -307,7 +308,7 @@ const AboutSettings: FC = () => {
         )}
       </SettingGroup>
 
-      {appUpdateState.info && appUpdateState.available && (
+      {DISTRIBUTION.updatesEnabled && appUpdateState.info && appUpdateState.available && (
         <SettingGroup theme={theme}>
           <SettingRow className="gap-3">
             <SettingRowTitle className="gap-2.5">
@@ -329,48 +330,52 @@ const AboutSettings: FC = () => {
           actionLabel={t('settings.about.website.button')}
           onAction={onOpenDocs}
         />
-        <Divider className="my-3" />
-        <AboutActionRow
-          icon={<Rss className="size-4.5" />}
-          title={t('settings.about.releases.title')}
-          actionLabel={t('settings.about.releases.button')}
-          onAction={showReleases}
-        />
-        <Divider className="my-3" />
-        <AboutActionRow
-          icon={<Globe className="size-4.5" />}
-          title={t('settings.about.website.title')}
-          actionLabel={t('settings.about.website.button')}
-          onAction={() => onOpenWebsite('https://cherry-ai.com')}
-        />
-        <Divider className="my-3" />
-        <AboutActionRow
-          icon={<MessageSquareText className="size-4.5" />}
-          title={t('settings.about.feedback.title')}
-          actionLabel={t('settings.about.feedback.button')}
-          onAction={() => setFeedbackOpen(true)}
-        />
-        <Divider className="my-3" />
-        <AboutActionRow
-          icon={<Building2 className="size-4.5" />}
-          title={t('settings.about.enterprise.title')}
-          actionLabel={t('settings.about.website.button')}
-          onAction={showEnterprise}
-        />
-        <Divider className="my-3" />
-        <AboutActionRow
-          icon={<Mail className="size-4.5" />}
-          title={t('settings.about.contact.title')}
-          actionLabel={t('settings.about.contact.button')}
-          onAction={mailto}
-        />
-        <Divider className="my-3" />
-        <AboutActionRow
-          icon={<Briefcase className="size-4.5" />}
-          title={t('settings.about.careers.title')}
-          actionLabel={t('settings.about.careers.button')}
-          onAction={() => onOpenWebsite('https://www.cherry-ai.com/careers')}
-        />
+        {DISTRIBUTION.upstreamServicesEnabled && (
+          <>
+            <Divider className="my-3" />
+            <AboutActionRow
+              icon={<Rss className="size-4.5" />}
+              title={t('settings.about.releases.title')}
+              actionLabel={t('settings.about.releases.button')}
+              onAction={showReleases}
+            />
+            <Divider className="my-3" />
+            <AboutActionRow
+              icon={<Globe className="size-4.5" />}
+              title={t('settings.about.website.title')}
+              actionLabel={t('settings.about.website.button')}
+              onAction={() => onOpenWebsite('https://cherry-ai.com')}
+            />
+            <Divider className="my-3" />
+            <AboutActionRow
+              icon={<MessageSquareText className="size-4.5" />}
+              title={t('settings.about.feedback.title')}
+              actionLabel={t('settings.about.feedback.button')}
+              onAction={() => setFeedbackOpen(true)}
+            />
+            <Divider className="my-3" />
+            <AboutActionRow
+              icon={<Building2 className="size-4.5" />}
+              title={t('settings.about.enterprise.title')}
+              actionLabel={t('settings.about.website.button')}
+              onAction={showEnterprise}
+            />
+            <Divider className="my-3" />
+            <AboutActionRow
+              icon={<Mail className="size-4.5" />}
+              title={t('settings.about.contact.title')}
+              actionLabel={t('settings.about.contact.button')}
+              onAction={mailto}
+            />
+            <Divider className="my-3" />
+            <AboutActionRow
+              icon={<Briefcase className="size-4.5" />}
+              title={t('settings.about.careers.title')}
+              actionLabel={t('settings.about.careers.button')}
+              onAction={() => onOpenWebsite('https://www.cherry-ai.com/careers')}
+            />
+          </>
+        )}
         <Divider className="my-3" />
         <AboutActionRow
           icon={<FileArchive className="size-4.5" />}
@@ -391,7 +396,7 @@ const AboutSettings: FC = () => {
         open={isDiagnosticDialogOpen}
         onOpenChange={setIsDiagnosticDialogOpen}
       />
-      <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
+      {DISTRIBUTION.upstreamServicesEnabled && <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />}
     </SettingsContentColumn>
   )
 }

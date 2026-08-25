@@ -2,6 +2,7 @@ import { application } from '@application'
 import { type Activatable, BaseService, Injectable, Phase, ServicePhase } from '@main/core/lifecycle'
 import { isLinux, isMac, isWin } from '@main/core/platform'
 import { t } from '@main/i18n'
+import { DISTRIBUTION } from '@shared/utils/distribution'
 import type { MenuItemConstructorOptions } from 'electron'
 import { Menu, nativeImage, nativeTheme, Tray } from 'electron'
 
@@ -50,7 +51,7 @@ export class TrayService extends BaseService implements Activatable {
       this.tray.setContextMenu(this.contextMenu)
     }
 
-    this.tray.setToolTip('Cherry Studio')
+    this.tray.setToolTip(DISTRIBUTION.productName)
 
     this.tray.on('right-click', () => {
       if (this.contextMenu) {

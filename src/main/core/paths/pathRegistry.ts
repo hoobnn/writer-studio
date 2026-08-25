@@ -52,7 +52,7 @@ export function buildPathRegistry() {
   const appUserDataToolchainMise = path.join(appUserDataToolchain, 'mise')
   const appSession = app.getPath('sessionData')
   const sysTemp = app.getPath('temp')
-  const appTemp = path.join(sysTemp, 'CherryStudio')
+  const appTemp = path.join(sysTemp, (app.getName?.() ?? 'CherryStudio').replaceAll(' ', ''))
   // electron-builder `extraResources` output — distinct from appRootResources
   const appExtraResources = process.resourcesPath
   // `resources/` inside asar (bundled assets) — distinct from appExtraResources

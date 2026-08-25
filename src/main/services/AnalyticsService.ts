@@ -5,6 +5,7 @@ import { createLatestReconciler, type LatestReconciler } from '@main/core/concur
 import { type Activatable, BaseService, Injectable, Phase, ServicePhase } from '@main/core/lifecycle'
 import { generateUserAgent, getClientId } from '@main/utils/systemInfo'
 import { APP_NAME, LATEST_PRIVACY_POLICY_VERSION } from '@shared/utils/constants'
+import { DISTRIBUTION } from '@shared/utils/distribution'
 import { app } from 'electron'
 
 const logger = loggerService.withContext('AnalyticsService')
@@ -16,6 +17,10 @@ export class AnalyticsService extends BaseService implements Activatable {
   private hasTrackedAppLaunch = false
   /** Latest desired running state — requires both data collection and current policy consent. */
   private desiredEnabled = false
+
+  constructor(private readonly analyticsEnabled: boolean = DISTRIBUTION.analyticsEnabled) {
+    super()
+  }
   /**
    * Converges the client's running state to `desiredEnabled`. It is the SOLE caller of
    * activate/deactivate, so transitions never run concurrently. Level-triggered against the ACTUAL
@@ -39,12 +44,15 @@ export class AnalyticsService extends BaseService implements Activatable {
   private refreshDesiredEnabled(): void {
     const preferenceService = application.get('PreferenceService')
     this.desiredEnabled =
+      this.analyticsEnabled &&
       preferenceService.get('app.privacy.data_collection.enabled') &&
       preferenceService.get('app.privacy.policy_version') === LATEST_PRIVACY_POLICY_VERSION
     this.reconciler.request()
   }
 
   protected async onInit() {
+    if (!this.analyticsEnabled) return
+
     // The reconciler is the sole driver of activate/deactivate (latest-wins): a re-enable that lands
     // while the async onDeactivate (`await client.destroy()`) is in flight must not be dropped by the
     // shared `_activating` guard. The reconciler holds no OS resources and is a construct-once field
@@ -59,6 +67,8 @@ export class AnalyticsService extends BaseService implements Activatable {
   }
 
   protected async onReady() {
+    if (!this.analyticsEnabled) return
+
     this.refreshDesiredEnabled()
     await this.reconciler.flush()
   }

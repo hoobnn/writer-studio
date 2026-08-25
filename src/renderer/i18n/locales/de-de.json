@@ -4997,6 +4997,7 @@
   "update.noReleaseNotes": "Kein Changelog verfügbar",
   "update.saveDataError": "Speichern fehlgeschlagen, bitte erneut versuchen",
   "update.title": "Update-Hinweis",
+  "writer.distribution.description": "Professional AI writing edition based on Cherry Studio.",
   "xlsx_preview.chart": "Diagramm",
   "xlsx_preview.chart_unsupported": "Dieser Diagrammtyp wird noch nicht unterstützt",
   "xlsx_preview.error.description": "Für diese Tabelle konnte keine Vorschau angezeigt werden.",

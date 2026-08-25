@@ -6,6 +6,7 @@ import { isDev, isLinux, isMac, isWin } from '@main/core/platform'
 import { WindowType } from '@main/core/window/types'
 import type { SelectionActionItem } from '@shared/data/preference/preferenceTypes'
 import { SelectionTriggerMode } from '@shared/data/preference/preferenceTypes'
+import { DISTRIBUTION } from '@shared/utils/distribution'
 import type { BrowserWindow } from 'electron'
 import { app, clipboard, screen, systemPreferences } from 'electron'
 import type {
@@ -624,7 +625,7 @@ export class SelectionService extends BaseService implements Activatable {
     // [macOS] a hacky way
     // when set `skipTransformProcessType: true`, if the selection is in self app, it will make the selection canceled after toolbar showing
     // so we just don't set `skipTransformProcessType: true` when in self app
-    const isSelf = ['com.github.Electron', 'com.kangfenmao.CherryStudio'].includes(programName)
+    const isSelf = ['com.github.Electron', DISTRIBUTION.appId].includes(programName)
 
     if (!isSelf) {
       // [macOS] an ugly hacky way

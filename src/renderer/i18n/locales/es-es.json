@@ -4997,6 +4997,7 @@
   "update.noReleaseNotes": "Sin notas de la versión",
   "update.saveDataError": "Error al guardar los datos, inténtalo de nuevo",
   "update.title": "Actualización",
+  "writer.distribution.description": "Professional AI writing edition based on Cherry Studio.",
   "xlsx_preview.chart": "Gráfico",
   "xlsx_preview.chart_unsupported": "Este tipo de gráfico todavía no es compatible",
   "xlsx_preview.error.description": "No se pudo previsualizar esta hoja de cálculo.",

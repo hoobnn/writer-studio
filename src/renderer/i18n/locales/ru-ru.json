@@ -4997,6 +4997,7 @@
   "update.noReleaseNotes": "Нет заметок об обновлении",
   "update.saveDataError": "Ошибка сохранения данных, повторите попытку",
   "update.title": "Обновление",
+  "writer.distribution.description": "Professional AI writing edition based on Cherry Studio.",
   "xlsx_preview.chart": "Диаграмма",
   "xlsx_preview.chart_unsupported": "Этот тип диаграммы пока не поддерживается",
   "xlsx_preview.error.description": "Не удалось открыть предварительный просмотр этой таблицы.",

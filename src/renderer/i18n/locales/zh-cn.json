@@ -4997,6 +4997,7 @@
   "update.noReleaseNotes": "暂无更新日志",
   "update.saveDataError": "保存数据失败，请重试",
   "update.title": "更新提示",
+  "writer.distribution.description": "基于 Cherry Studio 的专业 AI 写作发行版。",
   "xlsx_preview.chart": "图表",
   "xlsx_preview.chart_unsupported": "暂不支持此图表类型",
   "xlsx_preview.error.description": "无法预览此电子表格。",

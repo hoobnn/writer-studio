@@ -13,15 +13,16 @@ import { WindowType } from '@main/core/window/types'
 import { openSettingsInMainWindow } from '@main/services/mainWindowNavigation'
 import type { ProtocolMcpInstallRequest } from '@shared/data/types/mcpProtocolInstall'
 import type { McpServer } from '@shared/data/types/mcpServer'
+import { DISTRIBUTION } from '@shared/utils/distribution'
 import { app } from 'electron'
 
 import { parseMcpInstallProtocolUrl } from './handlers/mcpInstall'
 import { handleNavigateProtocolUrl } from './handlers/navigate'
 import { handleProvidersProtocolUrl } from './handlers/providersImport'
 
-export const CHERRY_STUDIO_PROTOCOL = 'cherrystudio'
+export const CHERRY_STUDIO_PROTOCOL = DISTRIBUTION.protocol
 
-const DESKTOP_FILE_NAME = 'cherrystudio-url-handler.desktop'
+const DESKTOP_FILE_NAME = `${DISTRIBUTION.protocol}-url-handler.desktop`
 const execAsync = promisify(exec)
 const logger = loggerService.withContext('ProtocolService')
 
@@ -262,7 +263,7 @@ export class ProtocolService extends BaseService {
       }
 
       const desktopFileContent = `[Desktop Entry]
-Name=Cherry Studio
+Name=${DISTRIBUTION.productName}
 Exec=${escapePathForExec(appPath)} %U
 Terminal=false
 Type=Application

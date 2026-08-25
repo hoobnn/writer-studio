@@ -23,9 +23,11 @@ function stubPlatform(platform: NodeJS.Platform) {
 
 function stubElectron({
   isPackaged = false,
+  name = 'CherryStudio',
   userData = DEFAULT_USER_DATA
 }: {
   isPackaged?: boolean
+  name?: string
   userData?: string
 } = {}) {
   const state = { logs: DEFAULT_LOGS }
@@ -39,7 +41,7 @@ function stubElectron({
   })
   vi.doMock('electron', () => ({
     __esModule: true,
-    app: { isPackaged, getPath, setAppLogsPath }
+    app: { isPackaged, getName: () => name, getPath, setAppLogsPath }
   }))
   return { setAppLogsPath, getPath }
 }
@@ -71,6 +73,15 @@ afterEach(() => {
 })
 
 describe('LOGS_DIR dev diversion', () => {
+  it('uses an isolated home for the packaged Writer Studio distribution', async () => {
+    stubPlatform('darwin')
+    stubElectron({ isPackaged: true, name: 'Writer Studio' })
+
+    const { CHERRY_HOME_DIRNAME } = await loadConstants()
+
+    expect(CHERRY_HOME_DIRNAME).toBe('.writerstudio')
+  })
+
   it('packaged: leaves the platform default untouched', async () => {
     stubPlatform('darwin')
     const { setAppLogsPath } = stubElectron({ isPackaged: true })

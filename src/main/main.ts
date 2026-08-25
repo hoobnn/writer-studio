@@ -39,6 +39,7 @@ application.initPathRegistry()
 
 import { electronApp } from '@electron-toolkit/utils'
 import { loggerService } from '@logger'
+import { DISTRIBUTION } from '@shared/utils/distribution'
 import { app } from 'electron'
 
 import { registerIpc } from './ipc'
@@ -69,7 +70,7 @@ const startApp = async () => {
   // app's notifications, taskbar icon grouping, and Jump Lists (no-op on macOS/Linux).
   // Must run before any window is created or notification fires, hence after the
   // migration gate returns and before lifecycle bootstrap.
-  electronApp.setAppUserModelId('com.kangfenmao.CherryStudio')
+  electronApp.setAppUserModelId(DISTRIBUTION.appId)
 
   // Start lifecycle (BeforeReady runs parallel with app.whenReady)
   application.registerAll(serviceList)

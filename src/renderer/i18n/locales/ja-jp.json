@@ -4997,6 +4997,7 @@
   "update.noReleaseNotes": "暫無更新日誌",
   "update.saveDataError": "データの保存に失敗しました。もう一度お試しください。",
   "update.title": "更新",
+  "writer.distribution.description": "Professional AI writing edition based on Cherry Studio.",
   "xlsx_preview.chart": "グラフ",
   "xlsx_preview.chart_unsupported": "このグラフ形式はまだサポートされていません",
   "xlsx_preview.error.description": "このスプレッドシートをプレビューできませんでした。",

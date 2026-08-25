@@ -80,10 +80,19 @@ beforeEach(() => {
 })
 
 describe('AnalyticsService data collection preference', () => {
+  it('keeps Writer Studio disconnected from upstream analytics', async () => {
+    const service = new AnalyticsService()
+    await service._doInit()
+
+    expect(service.isActivated).toBe(false)
+    expect(MockAnalyticsClient).not.toHaveBeenCalled()
+    expect(captured.prefHandlers).toEqual({})
+  })
+
   it('does not activate before the latest privacy policy is accepted', async () => {
     captured.preferenceValues['app.privacy.policy_version'] = ''
 
-    const service = new AnalyticsService()
+    const service = new AnalyticsService(true)
     await service._doInit()
 
     expect(service.isActivated).toBe(false)
@@ -96,7 +105,7 @@ describe('AnalyticsService data collection preference', () => {
 
   it('activates after the latest privacy policy is accepted', async () => {
     captured.preferenceValues['app.privacy.policy_version'] = ''
-    const service = new AnalyticsService()
+    const service = new AnalyticsService(true)
     await service._doInit()
 
     changePreference('app.privacy.policy_version', LATEST_PRIVACY_POLICY_VERSION)
@@ -107,7 +116,7 @@ describe('AnalyticsService data collection preference', () => {
   })
 
   it('deactivates when data collection is disabled', async () => {
-    const service = new AnalyticsService()
+    const service = new AnalyticsService(true)
     await service._doInit()
     await vi.waitFor(() => expect(service.isActivated).toBe(true))
 
@@ -130,7 +139,7 @@ describe('AnalyticsService data collection preference', () => {
   })
 
   it('re-activates when re-enabled during an in-flight async deactivate', async () => {
-    const service = new AnalyticsService()
+    const service = new AnalyticsService(true)
     await service._doInit()
     expect(captured.prefHandlers['app.privacy.data_collection.enabled']).toBeDefined()
     expect(captured.prefHandlers['app.privacy.policy_version']).toBeDefined()

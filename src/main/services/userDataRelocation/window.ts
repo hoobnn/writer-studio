@@ -9,6 +9,7 @@ import {
   type RelocationStage,
   UserDataRelocationIpcChannels
 } from '@shared/types/userDataRelocation'
+import { DISTRIBUTION } from '@shared/utils/distribution'
 import { BrowserWindow, ipcMain, type IpcMainInvokeEvent } from 'electron'
 
 const logger = loggerService.withContext('UserDataRelocationWindow')
@@ -87,7 +88,7 @@ export function openUserDataRelocationWindow(options: OpenRelocationWindowOption
     minimizable: true,
     show: false,
     autoHideMenuBar: true,
-    title: 'Cherry Studio',
+    title: DISTRIBUTION.productName,
     webPreferences: {
       preload: join(__dirname, '../preload/simplest.js'),
       partition: 'user-data-relocation-window',

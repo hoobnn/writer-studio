@@ -138,7 +138,16 @@ describe('AppUpdaterService', () => {
     autoUpdater.channel = ''
     autoUpdater.allowDowngrade = false
     autoUpdater.disableDifferentialDownload = false
-    appUpdater = new AppUpdaterService()
+    appUpdater = new AppUpdaterService(true)
+  })
+
+  it('keeps Writer Studio disconnected from the upstream update service', async () => {
+    const writerUpdater = new AppUpdaterService()
+
+    await expect(writerUpdater.checkForUpdates()).resolves.toEqual({ currentVersion: '1.0.0', updateInfo: null })
+    await expect(writerUpdater.getReleaseHistory()).resolves.toBeNull()
+    expect(autoUpdater.checkForUpdates).not.toHaveBeenCalled()
+    expect(net.fetch).not.toHaveBeenCalled()
   })
 
   describe('managed update feed', () => {

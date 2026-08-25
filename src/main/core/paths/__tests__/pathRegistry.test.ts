@@ -4,10 +4,12 @@ import path from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const getPathMock = vi.hoisted(() => vi.fn((key: string) => `/mock/${key}`))
+const getNameMock = vi.hoisted(() => vi.fn(() => 'CherryStudio'))
 
 vi.mock('electron', () => ({
   app: {
     getAppPath: vi.fn(() => '/mock/app'),
+    getName: getNameMock,
     getPath: getPathMock,
     isPackaged: false,
     setAppLogsPath: vi.fn()
@@ -26,6 +28,7 @@ import { buildPathRegistry, shouldAutoEnsure } from '../pathRegistry'
 // local Electron mock also lets the path-layout test exercise the real registry.
 
 beforeEach(() => {
+  getNameMock.mockReset().mockReturnValue('CherryStudio')
   getPathMock.mockReset().mockImplementation((key: string) => `/mock/${key}`)
 })
 
@@ -77,6 +80,16 @@ describe('buildPathRegistry', () => {
 
     expect(registry['feature.mcp.resource_results.temp']).toBe(
       path.join('/mock/temp', 'CherryStudio', 'mcp-resource-results')
+    )
+  })
+
+  it('isolates Writer Studio temporary storage', () => {
+    getNameMock.mockReturnValue('Writer Studio')
+
+    const registry = buildPathRegistry()
+
+    expect(registry['feature.mcp.resource_results.temp']).toBe(
+      path.join('/mock/temp', 'WriterStudio', 'mcp-resource-results')
     )
   })
 

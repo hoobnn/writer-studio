@@ -111,7 +111,7 @@ describe('AppUpdaterService — auto update-check scheduling', () => {
     const windowManagerStub = { broadcastToType: vi.fn() }
 
     scheduler = new SchedulerService()
-    appUpdater = new AppUpdaterService()
+    appUpdater = new AppUpdaterService(true)
 
     ;(application.get as ReturnType<typeof vi.fn>).mockImplementation((name: string) => {
       switch (name) {

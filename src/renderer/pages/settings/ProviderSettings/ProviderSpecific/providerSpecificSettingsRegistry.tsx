@@ -2,6 +2,7 @@ import { isClaudeCodeProviderId } from '@shared/data/presets/claudeCode'
 import { isCodexProviderId } from '@shared/data/presets/codex'
 import { isGrokCliProviderId } from '@shared/data/presets/grokCli'
 import type { Provider } from '@shared/data/types/provider'
+import { DISTRIBUTION } from '@shared/utils/distribution'
 import { isAwsBedrockProvider, isProviderSupportAuth, isVertexProvider, matchesPreset } from '@shared/utils/provider'
 import { lazy, type ReactNode } from 'react'
 
@@ -47,7 +48,7 @@ export const PROVIDER_SPECIFIC_SETTINGS_REGISTRY: Record<ProviderSpecificPlaceme
     },
     {
       key: 'cherryin-oauth',
-      when: ({ meta }) => meta.isCherryIN,
+      when: ({ meta }) => DISTRIBUTION.vendorOAuthEnabled && meta.isCherryIN,
       render: (providerId) => <CherryInOauth providerId={providerId} />
     },
     {
