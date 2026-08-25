@@ -3,6 +3,7 @@ description: The data-ui semantic selector contract for themes, tests, and autom
 sources:
   - scripts/uiContract
   - packages/ui/docs/variable-catalog.md
+  - src/renderer/features/writer
 ---
 
 # UI Semantic Contract
@@ -150,6 +151,28 @@ The maintained feature surfaces currently include:
 - `paintings.view`;
 - `code.view`, `code.navigation`, and `code.content`;
 - `mini-apps.view`.
+
+The Writer feature declares these explicit boundaries:
+
+- `writer.view` and `writer.welcome` for the workspace and empty-project entry;
+- `writer.documents.dialog` for the structured project JSON editor;
+- `writer.lorebook.dialog` for deterministic story-knowledge activation and editing;
+- `writer.proposals.list` for the portable proposal library;
+- `writer.history.dialog` for chapter history inspection and restore;
+- `writer.continuity-review.dialog`, `writer.continuity-review.findings`, and
+  `writer.continuity-review.finding` for the continuity review and its findings;
+- `writer.continuity-review.coverage` and `writer.continuity-review.orphan` for rule-coverage declarations and
+  waivers whose findings no longer exist.
+
+The Writer feature declares these explicit actions:
+
+- `writer.memory.manage` and `writer.documents.save`;
+- `writer.lorebook.open`, `writer.lorebook.add`, and `writer.lorebook.save`;
+- `writer.proposals.load`;
+- `writer.history.open`, `writer.history.read`, and `writer.history.restore`;
+- `writer.continuity-review.open`, `writer.continuity-review.run`, `writer.continuity-review.waive`,
+  `writer.continuity-review.renew`, and `writer.continuity-review.unwaive`;
+- `writer.continuity-review.coverage.mark` and `writer.continuity-review.coverage.revoke`.
 
 The maintained chat surface currently includes:
 
