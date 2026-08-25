@@ -14,6 +14,7 @@ import { WindowFatalFallback } from '@renderer/components/WindowFatalFallback'
 import { useMainWindowNavigation } from '@renderer/hooks/tab'
 import { useStorageMonitorNotification } from '@renderer/hooks/useStorageMonitorNotification'
 import { useWindowRuntime } from '@renderer/hooks/useWindowRuntime'
+import type { Tab } from '@shared/data/cache/cacheValueTypes'
 import { lazy, Suspense, useEffect } from 'react'
 
 import { useAppUpdateHandler } from './hooks/useAppUpdateHandler'
@@ -23,6 +24,16 @@ import { PrivacyPolicyUpdateGate } from './privacy/PrivacyPolicyUpdateGate'
 
 const logger = loggerService.withContext('MainApp')
 const OnboardingPage = lazy(() => import('./onboarding/OnboardingPage'))
+const WRITER_DEFAULT_TAB: Tab = {
+  // Keep the base shell's hard-exempt default id. TabLruManager deliberately
+  // protects `home` from hibernation, which is essential for live Writer state.
+  id: 'home',
+  type: 'route',
+  url: '/app/writer',
+  title: '',
+  lastAccessTime: Date.now(),
+  isDormant: false
+}
 
 // MainWindowRuntime removes the HTML boot spinner as soon as it mounts, so a suspended first-run
 // screen needs its own stand-in or the window goes blank. Mirrors main/index.html's `#spinner`.
@@ -74,7 +85,7 @@ export function MainWindowContent(): React.ReactElement {
   const [providerSetupStatus] = usePreference('app.onboarding.provider_setup.status')
 
   return (
-    <TabsProvider>
+    <TabsProvider initialDefaultTab={WRITER_DEFAULT_TAB}>
       {providerSetupStatus === 'pending' ? (
         <Suspense fallback={<BootFallback />}>
           <OnboardingPage />

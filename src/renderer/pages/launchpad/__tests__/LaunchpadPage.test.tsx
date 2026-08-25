@@ -110,6 +110,7 @@ vi.mock('@renderer/services/toast', () => ({
 vi.mock('@renderer/i18n/label', () => ({
   getSidebarIconLabelKey: (key: SidebarAppId) =>
     ({
+      writer: 'Writer',
       assistants: 'Chat',
       agents: 'Agent',
       store: 'Library',
@@ -150,7 +151,8 @@ vi.mock('react-i18next', () => ({
           'openclaw.title': 'OpenClaw',
           'paintings.title': 'Paintings',
           'title.launchpad': 'Launchpad',
-          'translate.title': 'Translate'
+          'translate.title': 'Translate',
+          'writer.title': 'Writer'
         }[key] ??
         options?.defaultValue ??
         key
@@ -230,6 +232,7 @@ describe('LaunchpadPage', () => {
       .filter((label): label is string =>
         [
           'Translate',
+          'Writer',
           'Chat',
           'Agent',
           'Paintings',
@@ -243,7 +246,7 @@ describe('LaunchpadPage', () => {
         ].includes(label ?? '')
       )
 
-    expect(appLabels.slice(0, 4)).toEqual(['Translate', 'Chat', 'Agent', 'Paintings'])
+    expect(appLabels.slice(0, 4)).toEqual(['Translate', 'Chat', 'Agent', 'Writer'])
   })
 
   it('sorts every app tile and persists to the launchpad app order, not the sidebar favorites', () => {
@@ -505,11 +508,16 @@ describe('LaunchpadPage', () => {
 
     expect(screen.getByTestId('menu-launchpad.unpin-from-sidebar.assistants')).toHaveTextContent('Remove from Sidebar')
     expect(screen.getByTestId('menu-launchpad.unpin-from-sidebar.assistants')).toBeDisabled()
+    expect(screen.getByTestId('menu-launchpad.unpin-from-sidebar.writer')).toBeDisabled()
     expect(screen.getByTestId('menu-launchpad.pin-to-sidebar.knowledge')).toHaveTextContent('Add to Sidebar')
 
     await user.click(screen.getByTestId('menu-launchpad.pin-to-sidebar.knowledge'))
 
-    expect(mocks.setSidebarFavorites).toHaveBeenCalledWith([appFavorite('assistants'), appFavorite('knowledge')])
+    expect(mocks.setSidebarFavorites).toHaveBeenCalledWith([
+      appFavorite('writer'),
+      appFavorite('assistants'),
+      appFavorite('knowledge')
+    ])
   })
 
   it('removes an existing sidebar app icon from the context menu', async () => {
@@ -522,6 +530,6 @@ describe('LaunchpadPage', () => {
 
     await user.click(screen.getByTestId('menu-launchpad.unpin-from-sidebar.knowledge'))
 
-    expect(mocks.setSidebarFavorites).toHaveBeenCalledWith([appFavorite('assistants')])
+    expect(mocks.setSidebarFavorites).toHaveBeenCalledWith([appFavorite('writer'), appFavorite('assistants')])
   })
 })

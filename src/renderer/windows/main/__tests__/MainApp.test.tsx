@@ -6,6 +6,7 @@ import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const onboardingModule = vi.hoisted(() => ({ evaluations: 0 }))
+const tabsProviderModule = vi.hoisted(() => ({ initialDefaultTab: undefined as unknown }))
 
 vi.mock('../onboarding/OnboardingPage', () => {
   onboardingModule.evaluations += 1
@@ -17,7 +18,10 @@ vi.mock('../privacy/PrivacyPolicyUpdateGate', () => ({
 }))
 
 vi.mock('@renderer/components/layout/TabsProvider', () => ({
-  TabsProvider: ({ children }: { children: ReactNode }) => <div data-testid="tabs-provider">{children}</div>
+  TabsProvider: ({ children, initialDefaultTab }: { children: ReactNode; initialDefaultTab?: unknown }) => {
+    tabsProviderModule.initialDefaultTab = initialDefaultTab
+    return <div data-testid="tabs-provider">{children}</div>
+  }
 }))
 
 vi.mock('@renderer/components/layout/AppShell', () => ({
@@ -52,6 +56,7 @@ function appendBootSpinner() {
 describe('MainWindowContent', () => {
   beforeEach(() => {
     MockUsePreferenceUtils.resetMocks()
+    tabsProviderModule.initialDefaultTab = undefined
   })
 
   afterEach(() => {
@@ -65,6 +70,11 @@ describe('MainWindowContent', () => {
       const view = render(<MainWindowContent />)
 
       expect(screen.getByTestId('tabs-provider')).toBeInTheDocument()
+      expect(tabsProviderModule.initialDefaultTab).toMatchObject({
+        id: 'home',
+        type: 'route',
+        url: '/app/writer'
+      })
       expect(screen.getByTestId('app-shell')).toBeInTheDocument()
       expect(screen.queryByTestId('onboarding-page')).not.toBeInTheDocument()
       expect(screen.getByTestId('privacy-policy-gate')).toBeInTheDocument()

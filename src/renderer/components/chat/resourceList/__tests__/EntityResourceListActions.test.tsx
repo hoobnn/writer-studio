@@ -1034,6 +1034,7 @@ describe('classic layout entity resource list actions', () => {
     fireEvent.click(within(menu).getByRole('button', { name: 'launchpad.pin_to_sidebar' }))
 
     expect(preferenceMocks.setPreference).toHaveBeenCalledWith('ui.sidebar.favorites', [
+      { type: 'app', id: 'writer' },
       { type: 'app', id: 'assistants' },
       { type: 'agent', id: 'agent-1' }
     ])
@@ -1058,6 +1059,7 @@ describe('classic layout entity resource list actions', () => {
     fireEvent.click(within(menu).getByRole('button', { name: 'launchpad.unpin_from_sidebar' }))
 
     expect(preferenceMocks.setPreference).toHaveBeenCalledWith('ui.sidebar.favorites', [
+      { type: 'app', id: 'writer' },
       { type: 'app', id: 'assistants' }
     ])
   })
@@ -1073,6 +1075,7 @@ describe('classic layout entity resource list actions', () => {
     fireEvent.click(within(menu).getByRole('button', { name: 'launchpad.pin_to_sidebar' }))
 
     expect(preferenceMocks.setPreference).toHaveBeenCalledWith('ui.sidebar.favorites', [
+      { type: 'app', id: 'writer' },
       { type: 'app', id: 'assistants' },
       { type: 'assistant', id: 'assistant-1' }
     ])
@@ -1091,6 +1094,7 @@ describe('classic layout entity resource list actions', () => {
     fireEvent.click(within(menu).getByRole('button', { name: 'launchpad.unpin_from_sidebar' }))
 
     expect(preferenceMocks.setPreference).toHaveBeenCalledWith('ui.sidebar.favorites', [
+      { type: 'app', id: 'writer' },
       { type: 'app', id: 'assistants' }
     ])
   })

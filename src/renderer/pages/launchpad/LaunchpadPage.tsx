@@ -11,6 +11,7 @@ import miniAppIcon from '@renderer/assets/images/apps/launchpad-mini-app.svg'
 import notesIcon from '@renderer/assets/images/apps/launchpad-notes.svg'
 import paintingsIcon from '@renderer/assets/images/apps/launchpad-paintings.svg'
 import translateIcon from '@renderer/assets/images/apps/launchpad-translate.svg'
+import writerIcon from '@renderer/assets/images/apps/launchpad-writer.svg'
 import { CommandContextMenu, type CommandContextMenuExtraItem } from '@renderer/components/command'
 import App from '@renderer/components/MiniApp/MiniApp'
 import Scrollbar from '@renderer/components/Scrollbar'
@@ -40,6 +41,7 @@ const APP_ICON_CLASS = 'size-[50px] object-contain'
 const SORTABLE_CONTENTS_STYLE = { display: 'contents' } as const
 
 const APP_ICON_SOURCES: Record<SidebarAppId, string> = {
+  writer: writerIcon,
   assistants: assistantsIcon,
   agents: agentsIcon,
   paintings: paintingsIcon,

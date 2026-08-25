@@ -99,6 +99,7 @@ export type TopicTabPosition = 'left' | 'right'
 export type AgentSessionDisplayMode = 'time' | 'agent' | 'workdir'
 
 export const SIDEBAR_FAVORITES = [
+  'writer',
   'assistants',
   'agents',
   'paintings',

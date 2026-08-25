@@ -56,7 +56,10 @@ const mocks = vi.hoisted(() => ({
   showUserPopup: vi.fn(),
   sidebarWidth: 50,
   tabs: [] as FakeTab[],
-  sidebarFavorites: [{ type: 'app', id: 'assistants' }] as SidebarFavoriteItem[],
+  sidebarFavorites: [
+    { type: 'app', id: 'writer' },
+    { type: 'app', id: 'assistants' }
+  ] as SidebarFavoriteItem[],
   sidebarMiniAppFavorites: [] as SidebarFavoriteItem[],
   sidebarAgentFavorites: [] as SidebarFavoriteItem[],
   sidebarAssistantFavorites: [] as SidebarFavoriteItem[],
@@ -424,7 +427,7 @@ const weatherMiniApp: FakeMiniApp = {
 }
 
 function configureMiniApps(favoriteIds: string[], apps: FakeMiniApp[] = [calculatorMiniApp]) {
-  mocks.sidebarFavorites = [appFavorite('assistants'), appFavorite('mini_app')]
+  mocks.sidebarFavorites = [appFavorite('writer'), appFavorite('assistants'), appFavorite('mini_app')]
   mocks.sidebarMiniAppFavorites = favoriteIds.map(miniAppFavorite)
   mocks.allApps = apps
 }
@@ -432,7 +435,7 @@ function configureMiniApps(favoriteIds: string[], apps: FakeMiniApp[] = [calcula
 afterEach(() => {
   cleanup()
   vi.clearAllMocks()
-  mocks.sidebarFavorites = [appFavorite('assistants')]
+  mocks.sidebarFavorites = [appFavorite('writer'), appFavorite('assistants')]
   mocks.sidebarMiniAppFavorites = []
   mocks.sidebarAgentFavorites = []
   mocks.sidebarAssistantFavorites = []
@@ -519,7 +522,7 @@ describe('app Sidebar', () => {
     const labels = Array.from(screen.getByTestId('sidebar-items').querySelectorAll('span')).map(
       (element) => element.textContent
     )
-    expect(labels).toEqual(['Translate', 'Chat', 'Work'])
+    expect(labels).toEqual(['writer', 'Translate', 'Chat', 'Work'])
   })
 
   it('removes a sidebar app favorite from the context menu', () => {
@@ -533,12 +536,17 @@ describe('app Sidebar', () => {
 
     fireEvent.click(screen.getByTestId('sidebar-menu-sidebar.remove-app.knowledge'))
 
-    expect(mocks.setSidebarFavorites).toHaveBeenCalledWith([appFavorite('assistants'), appFavorite('files')])
+    expect(mocks.setSidebarFavorites).toHaveBeenCalledWith([
+      appFavorite('writer'),
+      appFavorite('assistants'),
+      appFavorite('files')
+    ])
   })
 
   it('keeps required sidebar favorites protected in the context menu', () => {
     render(<Sidebar />)
 
+    expect(screen.getByTestId('sidebar-menu-sidebar.remove-app.writer')).toBeDisabled()
     expect(screen.getByTestId('sidebar-menu-sidebar.remove-app.assistants')).toBeDisabled()
 
     fireEvent.click(screen.getByTestId('sidebar-menu-sidebar.remove-app.assistants'))
@@ -595,6 +603,7 @@ describe('app Sidebar', () => {
     fireEvent.click(screen.getByTestId('sidebar-menu-sidebar.remove-mini-app.calculator'))
 
     expect(mocks.setSidebarFavorites).toHaveBeenCalledWith([
+      appFavorite('writer'),
       appFavorite('assistants'),
       appFavorite('mini_app'),
       miniAppFavorite('weather')
@@ -618,11 +627,12 @@ describe('app Sidebar', () => {
     mocks.allApps = [calculatorMiniApp]
 
     render(<Sidebar />)
-    // Mixed list is [assistants, knowledge, files, calculator]; drag files to front.
-    act(() => mocks.onEntriesReorder?.({ oldIndex: 2, newIndex: 0 }))
+    // Mixed list is [writer, assistants, knowledge, files, calculator]; drag files to front.
+    act(() => mocks.onEntriesReorder?.({ oldIndex: 3, newIndex: 0 }))
 
     expect(mocks.setSidebarFavorites).toHaveBeenCalledWith([
       appFavorite('files'),
+      appFavorite('writer'),
       appFavorite('assistants'),
       appFavorite('knowledge'),
       miniAppFavorite('calculator')
@@ -633,10 +643,11 @@ describe('app Sidebar', () => {
     configureMiniApps(['calculator', 'weather'], [calculatorMiniApp, weatherMiniApp])
 
     render(<Sidebar />)
-    // Mixed list is [assistants, mini_app, calculator, weather]; drag weather above calculator.
-    act(() => mocks.onEntriesReorder?.({ oldIndex: 3, newIndex: 2 }))
+    // Mixed list is [writer, assistants, mini_app, calculator, weather]; drag weather above calculator.
+    act(() => mocks.onEntriesReorder?.({ oldIndex: 4, newIndex: 3 }))
 
     expect(mocks.setSidebarFavorites).toHaveBeenCalledWith([
+      appFavorite('writer'),
       appFavorite('assistants'),
       appFavorite('mini_app'),
       miniAppFavorite('weather'),
@@ -651,11 +662,12 @@ describe('app Sidebar', () => {
     configureMiniApps(['calculator'])
 
     render(<Sidebar />)
-    // Mixed list is [assistants, mini_app, calculator]; drag calculator to the very top.
-    act(() => mocks.onEntriesReorder?.({ oldIndex: 2, newIndex: 0 }))
+    // Mixed list is [writer, assistants, mini_app, calculator]; drag calculator to the very top.
+    act(() => mocks.onEntriesReorder?.({ oldIndex: 3, newIndex: 0 }))
 
     expect(mocks.setSidebarFavorites).toHaveBeenCalledWith([
       miniAppFavorite('calculator'),
+      appFavorite('writer'),
       appFavorite('assistants'),
       appFavorite('mini_app')
     ])

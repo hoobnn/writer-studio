@@ -7,6 +7,7 @@ const BASE_URL = 'https://www.cherry-ai.com/'
  * Route to i18n key mapping for default tab titles
  */
 const routeTitleKeys: Record<string, string> = {
+  '/app/writer': 'writer.title',
   '/app/chat': 'agent.session.group.conversation',
   '/app/agents': 'title.work',
   '/app/paintings': 'title.paintings',
