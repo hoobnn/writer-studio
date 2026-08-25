@@ -21,7 +21,7 @@ import {
 } from '@cherrystudio/ui'
 import { cn } from '@cherrystudio/ui/lib/utils'
 import { DIALOG_UNMOUNT_DELAY_MS } from '@cherrystudio/ui/utils'
-import AppLogo from '@renderer/assets/images/logo.png'
+import AppLogo from '@renderer/assets/images/apps/launchpad-writer.svg'
 import ToastHost from '@renderer/components/ToastHost'
 import { loggerService } from '@renderer/services/LoggerService'
 import { isMac } from '@renderer/utils/platform'
@@ -30,6 +30,7 @@ import {
   type MigrationStage,
   type PreparedMigrationExportPaths
 } from '@shared/data/migration/v2/types'
+import { DISTRIBUTION } from '@shared/utils/distribution'
 import {
   AlertTriangle,
   ArrowRight,
@@ -861,8 +862,8 @@ const MigrationApp: React.FC = () => {
             </Tooltip>
           </div>
           <div className="flex items-center gap-2">
-            <img src={AppLogo} alt="Cherry Studio" className="h-4.5 w-4.5 rounded-full object-cover" />
-            <span className="font-medium text-foreground text-sm">Cherry Studio</span>
+            <img src={AppLogo} alt={DISTRIBUTION.productName} className="h-4.5 w-4.5 rounded-full object-cover" />
+            <span className="font-medium text-foreground text-sm">{DISTRIBUTION.productName}</span>
             <span className="text-foreground-tertiary">·</span>
             <span className="text-foreground-tertiary text-xs">{t('migration.title')}</span>
           </div>

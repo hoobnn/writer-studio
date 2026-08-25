@@ -1,0 +1,10 @@
+export const DISTRIBUTION = Object.freeze({
+  analyticsEnabled: false,
+  appId: 'com.ikuyu.writerstudio',
+  appName: 'WriterStudio',
+  productName: 'Writer Studio',
+  protocol: 'writerstudio',
+  updatesEnabled: false,
+  upstreamServicesEnabled: false,
+  vendorOAuthEnabled: false
+})

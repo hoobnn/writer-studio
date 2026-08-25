@@ -5,6 +5,7 @@ import { join } from 'node:path'
 
 import { CHERRYAI_DEFAULT_UNIQUE_MODEL_ID, CHERRYAI_PROVIDER_ID } from '@shared/data/presets/cherryai'
 import { LATEST_PRIVACY_POLICY_VERSION } from '@shared/utils/constants'
+import type * as DistributionModule from '@shared/utils/distribution'
 import {
   mockUseMultiplePreferences,
   mockUsePreference,
@@ -40,6 +41,11 @@ const selectedModelsMock: {
 } = {}
 const defaultUsePreferenceImplementation = mockUsePreference.getMockImplementation()
 const defaultUseMultiplePreferencesImplementation = mockUseMultiplePreferences.getMockImplementation()
+
+vi.mock('@shared/utils/distribution', async (importOriginal) => {
+  const actual = await importOriginal<typeof DistributionModule>()
+  return { DISTRIBUTION: { ...actual.DISTRIBUTION, vendorOAuthEnabled: true } }
+})
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key })
@@ -724,7 +730,7 @@ describe('OnboardingPage', () => {
   it('uses an elevated welcome layout with clear text hierarchy and intentional spacing', () => {
     render(<OnboardingPage />)
 
-    const logo = screen.getByRole('img', { name: 'Cherry Studio' })
+    const logo = screen.getByRole('img', { name: 'Writer Studio' })
     const welcomeContent = logo.parentElement
     const primaryAction = screen.getByRole('button', { name: 'onboarding.welcome.login_cherryin' })
     const secondaryAction = screen.getByRole('button', { name: 'onboarding.welcome.other_provider' })

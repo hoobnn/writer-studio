@@ -9,6 +9,7 @@ import { generateUserAgent, getClientId } from '@main/utils/systemInfo'
 import type { RetryPolicy } from '@shared/data/api/schemas/jobs'
 import { UpgradeChannel } from '@shared/data/preference/preferenceTypes'
 import { APP_NAME } from '@shared/utils/constants'
+import { DISTRIBUTION } from '@shared/utils/distribution'
 import {
   hasMultiLanguageReleaseNotes,
   localizeReleaseNotes,
@@ -87,7 +88,13 @@ export class AppUpdaterService extends BaseService {
   // Consecutive scheduled-check failures, drives backoff; reset on success.
   private updateCheckFailures = 0
 
+  constructor(private readonly updatesEnabled: boolean = DISTRIBUTION.updatesEnabled) {
+    super()
+  }
+
   protected async onInit(): Promise<void> {
+    if (!this.updatesEnabled) return
+
     autoUpdater.logger = logger as Logger
     // Packaged builds use app-update.yml generated from electron-builder.yml;
     // development uses the repository's dev-app-update.yml.
@@ -122,6 +129,8 @@ export class AppUpdaterService extends BaseService {
   }
 
   protected async onAllReady(): Promise<void> {
+    if (!this.updatesEnabled) return
+
     application.get('PowerService').registerShutdownHandler(() => {
       autoUpdater.autoDownload = false
     })
@@ -237,6 +246,8 @@ export class AppUpdaterService extends BaseService {
   }
 
   public async getLatestReleaseNotes(): Promise<ReleaseNotesEntry | null> {
+    if (!this.updatesEnabled) return null
+
     try {
       const { requestedChannel, updateHeaders } = await this.getUpdateRequest()
       const updater = new ReleaseNotesUpdater()
@@ -266,6 +277,8 @@ export class AppUpdaterService extends BaseService {
   }
 
   public async getReleaseHistory(): Promise<ReleaseNotesEntry[] | null> {
+    if (!this.updatesEnabled) return null
+
     const [history, latestRelease] = await Promise.all([this.fetchReleaseHistory(), this.getLatestReleaseNotes()])
 
     if (!history) {
@@ -326,6 +339,10 @@ export class AppUpdaterService extends BaseService {
   }
 
   public async checkForUpdates() {
+    if (!this.updatesEnabled) {
+      return { currentVersion: app.getVersion(), updateInfo: null }
+    }
+
     try {
       return await this.performUpdateCheck()
     } catch (error) {
@@ -377,6 +394,8 @@ export class AppUpdaterService extends BaseService {
   }
 
   public quitAndInstall() {
+    if (!this.updatesEnabled) return
+
     application.markQuitting()
     setImmediate(() => autoUpdater.quitAndInstall(true, true))
   }

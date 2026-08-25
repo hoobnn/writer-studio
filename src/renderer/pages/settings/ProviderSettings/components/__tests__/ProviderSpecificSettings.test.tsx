@@ -98,13 +98,18 @@ describe('ProviderSpecificSettings', () => {
     expect(providerOauthModuleLoadedMock).toHaveBeenCalledOnce()
   })
 
+  it('does not offer CherryIn OAuth when the downstream redirect is not registered', () => {
+    useProviderMock.mockReturnValue({
+      provider: { id: 'cherryin', name: 'cherryin', isEnabled: true }
+    })
+    useProviderMetaMock.mockReturnValue({ isCherryIN: true, isDmxapi: false })
+
+    render(<ProviderSpecificSettings providerId="cherryin" placement="beforeAuth" />)
+
+    expect(screen.queryByText('cherryin-oauth-cherryin')).not.toBeInTheDocument()
+  })
+
   it.each([
-    {
-      providerId: 'cherryin',
-      placement: 'beforeAuth' as const,
-      meta: { isCherryIN: true, isDmxapi: false },
-      expectedText: 'cherryin-oauth-cherryin'
-    },
     {
       providerId: 'dmxapi',
       placement: 'beforeAuth' as const,

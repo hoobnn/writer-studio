@@ -10,7 +10,7 @@ import {
 } from '@cherrystudio/ui'
 import { dataApiService } from '@data/DataApiService'
 import { useMultiplePreferences, usePreference } from '@data/hooks/usePreference'
-import AppLogo from '@renderer/assets/images/logo.png'
+import WriterLogo from '@renderer/assets/images/apps/launchpad-writer.svg'
 import { WindowControls } from '@renderer/components/WindowControls'
 import { useDefaultModel, useModels } from '@renderer/hooks/useModel'
 import { useProvider, useProviders } from '@renderer/hooks/useProvider'
@@ -25,6 +25,7 @@ import type { OnboardingProviderSetupStatus } from '@shared/data/preference/pref
 import { CHERRYAI_DEFAULT_UNIQUE_MODEL_ID, CHERRYAI_PROVIDER_ID } from '@shared/data/presets/cherryai'
 import type { Model } from '@shared/data/types/model'
 import { LATEST_PRIVACY_POLICY_VERSION } from '@shared/utils/constants'
+import { DISTRIBUTION } from '@shared/utils/distribution'
 import { defaultLanguage } from '@shared/utils/languages'
 import { createMemoryHistory, createRootRoute, createRouter, RouterProvider } from '@tanstack/react-router'
 import { ArrowLeft, Check, KeyRound, Languages, LogIn } from 'lucide-react'
@@ -330,25 +331,27 @@ export default function OnboardingPage() {
             {step === 'welcome' && (
               <div className="flex h-full w-full items-center justify-center px-6 pb-20">
                 <div className="flex w-full max-w-[420px] flex-col items-center">
-                  <img src={AppLogo} alt="Cherry Studio" className="size-16 rounded-xl" />
+                  <img src={WriterLogo} alt={DISTRIBUTION.productName} className="size-16 rounded-xl" />
                   <div className="mt-5 flex flex-col gap-2 text-center">
                     <h1 className="m-0 font-semibold text-2xl text-foreground">{t('onboarding.welcome.title')}</h1>
                     <p className="m-0 text-muted-foreground text-sm">{t('onboarding.welcome.subtitle')}</p>
                   </div>
                   <div className="mt-8 flex w-full flex-col gap-3">
+                    {DISTRIBUTION.vendorOAuthEnabled && (
+                      <Button
+                        type="button"
+                        size="lg"
+                        className="h-11 w-full rounded-xl"
+                        loading={isLoggingIn}
+                        disabled={isUpdatingPrivacy}
+                        onClick={() => void runAfterPrivacyChoice(handleCherryInLogin)}>
+                        {!isLoggingIn && <LogIn size={16} />}
+                        {t('onboarding.welcome.login_cherryin')}
+                      </Button>
+                    )}
                     <Button
                       type="button"
-                      size="lg"
-                      className="h-11 w-full rounded-xl"
-                      loading={isLoggingIn}
-                      disabled={isUpdatingPrivacy}
-                      onClick={() => void runAfterPrivacyChoice(handleCherryInLogin)}>
-                      {!isLoggingIn && <LogIn size={16} />}
-                      {t('onboarding.welcome.login_cherryin')}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
+                      variant={DISTRIBUTION.vendorOAuthEnabled ? 'outline' : 'default'}
                       size="lg"
                       className="h-11 w-full rounded-xl"
                       disabled={isUpdatingPrivacy}

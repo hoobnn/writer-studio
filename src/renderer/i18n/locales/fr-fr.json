@@ -4963,6 +4963,7 @@
   "update.noReleaseNotes": "Aucune note de version",
   "update.saveDataError": "Échec de la sauvegarde des données, veuillez réessayer",
   "update.title": "Mise à jour",
+  "writer.distribution.description": "Professional AI writing edition based on Cherry Studio.",
   "xlsx_preview.chart": "Graphique",
   "xlsx_preview.chart_unsupported": "Ce type de graphique n’est pas encore pris en charge",
   "xlsx_preview.error.description": "Impossible d’afficher un aperçu de cette feuille de calcul.",
