@@ -76,6 +76,23 @@ export interface Tab {
   savedState?: TabSavedState // 休眠前保存的状态
 }
 
+/** Renderer-side crash recovery for an unsaved Writer chapter draft. */
+export interface WriterRecoveryDraft {
+  rootPath: string
+  chapterId: string
+  baseRevision: string
+  content: string
+  updatedAt: string
+}
+
+/** Fixed-key maps avoid unbounded dynamic persist-cache schema keys. */
+export type WriterRecoveryDraftMap = Record<string, WriterRecoveryDraft>
+export interface WriterActiveJobEntry {
+  jobId: string
+  updatedAt: string
+}
+export type WriterActiveJobMap = Record<string, WriterActiveJobEntry>
+
 export interface TabsState {
   tabs: Tab[]
   activeTabId: string

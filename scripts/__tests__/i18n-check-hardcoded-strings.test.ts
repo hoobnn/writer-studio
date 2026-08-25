@@ -8,6 +8,7 @@ import {
   hasEnglishUIText,
   isInCodeContext,
   isNonUIString,
+  shouldSkipFile,
   shouldSkipNode
 } from '../i18n-check-hardcoded-strings'
 
@@ -162,6 +163,10 @@ describe('i18n-check-hardcoded-strings', () => {
 
     it('should skip type definition files', () => {
       expect(mockShouldSkipFile(`${mockSrcDir}/types/index.d.ts`)).toBe(true)
+    })
+
+    it('should skip camelCase prompt asset files', () => {
+      expect(shouldSkipFile('/mock/src/main/features/writer/writerPrompts.ts', '/mock/src/main')).toBe(true)
     })
 
     it('should skip i18n/locales directories', () => {
