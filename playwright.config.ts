@@ -1,5 +1,9 @@
 import { defineConfig } from '@playwright/test'
 
+// Keep E2E state out of the shared development profile while allowing the
+// dedicated profile to exercise both first-run and reused-profile startup.
+process.env.CS_DEV_USER_DATA_SUFFIX ??= 'E2E'
+
 /**
  * Playwright configuration for Electron e2e testing.
  * See https://playwright.dev/docs/test-configuration
@@ -58,7 +62,7 @@ export default defineConfig({
   projects: [
     {
       name: 'electron',
-      testMatch: '**/*.spec.ts'
+      testMatch: ['**/*.spec.ts', '**/*.test.ts']
     }
   ]
 })

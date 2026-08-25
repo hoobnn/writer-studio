@@ -20,6 +20,8 @@ export async function waitForAppReady(page: Page, timeout: number = 60000): Prom
       '[class*="Sidebar"]', // Sidebar component
       '[class*="TabsContainer"]', // Tabs container
       '[class*="home-navbar"]', // Home navbar
+      '[data-ui~="writer.welcome"]', // Writer welcome page
+      '[data-ui~="writer.view"]', // Open Writer project
       '[class*="Container"]' // Generic generated container class
     ].join(', '),
     {
