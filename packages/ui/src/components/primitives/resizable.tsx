@@ -31,6 +31,7 @@ type ResizablePanelProps = Partial<
     | 'maxSize'
     | 'minSize'
     | 'onResize'
+    | 'panelRef'
     | 'style'
   >
 >
@@ -90,5 +91,7 @@ function ResizableHandle({ children, className, withHandle, ...props }: Resizabl
   )
 }
 
-export { ResizableHandle, ResizablePanel, ResizablePanelGroup }
+const useResizablePanelRef = ResizablePrimitive.usePanelRef
+
+export { ResizableHandle, ResizablePanel, ResizablePanelGroup, useResizablePanelRef }
 export type { ResizableHandleProps, ResizablePanelGroupProps, ResizablePanelProps }
