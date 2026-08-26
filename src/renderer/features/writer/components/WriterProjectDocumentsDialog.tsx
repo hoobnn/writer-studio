@@ -13,8 +13,8 @@ import {
   TabsTrigger
 } from '@cherrystudio/ui'
 import { formatErrorMessageWithPrefix } from '@renderer/utils/error'
-import type { WriterProject } from '@shared/types/writer'
-import { Braces, Save } from 'lucide-react'
+import type { WriterProject, WriterStoryBible } from '@shared/types/writer'
+import { Braces, PanelsTopLeft, Save } from 'lucide-react'
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -26,10 +26,12 @@ import {
   type WriterProjectDocumentSaveRequest
 } from '../projectDocuments'
 import { isWriterRevisionConflict } from '../utils'
+import { WriterStoryBibleForm } from './WriterStoryBibleForm'
 
 const CodeEditor = lazy(() => import('@cherrystudio/ui/components/composites/code-editor'))
 
 type DraftStatus = 'saved' | 'dirty' | 'saving' | 'error'
+type EditorMode = 'studio' | 'json'
 
 interface DocumentDraft {
   baseline: string
@@ -68,6 +70,7 @@ export function WriterProjectDocumentsDialog({
 }: WriterProjectDocumentsDialogProps) {
   const { t } = useTranslation()
   const [activeKind, setActiveKind] = useState<WriterProjectDocumentKind>('storyBible')
+  const [editorMode, setEditorMode] = useState<EditorMode>('studio')
   const [drafts, setDrafts] = useState<DocumentDrafts>(() => createDocumentDrafts(project))
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false)
   const draftsRef = useRef(drafts)
@@ -98,6 +101,15 @@ export function WriterProjectDocumentsDialog({
       }))
     },
     [activeKind, updateDraft]
+  )
+  const handleStoryBibleChange = useCallback(
+    (storyBible: WriterStoryBible) => {
+      updateDraft('storyBible', (draft) => {
+        const text = JSON.stringify(storyBible, null, 2)
+        return { ...draft, text, error: '', status: text === draft.baseline ? 'saved' : 'dirty' }
+      })
+    },
+    [updateDraft]
   )
 
   const saveActiveDocument = useCallback(async () => {
@@ -178,6 +190,10 @@ export function WriterProjectDocumentsDialog({
   const activeDraft = drafts[activeKind]
   const activeRevision = projectRef.current.documentRevisions[activeKind]
   const anyDocumentSaving = Object.values(drafts).some((draft) => draft.status === 'saving')
+  const storyBibleValidation = validateWriterProjectDocument('storyBible', drafts.storyBible.text)
+  const editableStoryBible = parseStoryBibleDraft(drafts.storyBible.text)
+  const canEnterStudio = storyBibleValidation.ok && storyBibleValidation.value.kind === 'storyBible'
+  const studioMode = activeKind === 'storyBible' && editorMode === 'studio' && Boolean(editableStoryBible)
 
   return (
     <>
@@ -186,66 +202,118 @@ export function WriterProjectDocumentsDialog({
           data-ui="writer.documents.dialog"
           size="xl"
           closeOnOverlayClick={false}
-          className="grid h-[min(760px,calc(100vh-2rem))] grid-rows-[auto_auto_minmax(0,1fr)_auto] gap-3">
+          className="grid h-[min(780px,calc(100vh-2rem))] grid-rows-[auto_minmax(0,1fr)_auto] gap-3 sm:max-w-5xl">
           <DialogHeader className="pr-8">
             <DialogTitle className="flex items-center gap-2">
               <Braces className="size-5 text-primary" aria-hidden />
-              {t('writer.documents.title')}
+              {t('writer.story_studio.title')}
             </DialogTitle>
-            <DialogDescription>{t('writer.documents.description')}</DialogDescription>
+            <DialogDescription>{t('writer.story_studio.description')}</DialogDescription>
           </DialogHeader>
 
-          <div className="rounded-lg border border-border bg-background-subtle px-3 py-2 text-muted-foreground text-xs leading-5">
-            {t('writer.documents.schema_hint')}
-          </div>
-
-          <div className="flex min-h-0 flex-col gap-3">
-            <Tabs value={activeKind} onValueChange={handleTabChange}>
-              <TabsList className="grid w-full grid-cols-3">
-                {WRITER_PROJECT_DOCUMENT_KINDS.map((kind) => (
-                  <TabsTrigger key={kind} value={kind} className="min-w-0 gap-1.5">
-                    <span className="truncate">{t(DOCUMENT_TAB_LABEL_KEYS[kind])}</span>
-                    {drafts[kind].status !== 'saved' ? (
-                      <Badge variant={drafts[kind].status === 'error' ? 'destructive' : 'outline'}>
-                        {t(DOCUMENT_STATUS_LABEL_KEYS[drafts[kind].status])}
-                      </Badge>
-                    ) : null}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
-
-            <div
-              role="tabpanel"
-              aria-label={t(DOCUMENT_TAB_LABEL_KEYS[activeKind])}
-              className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border [&_.cm-editor]:h-full [&_.cm-scroller]:overflow-auto">
-              <Suspense
-                fallback={
-                  <div role="status" className="flex h-full items-center justify-center text-muted-foreground text-sm">
-                    {t('common.loading')}
+          <div className="grid min-h-0 grid-cols-[14rem_minmax(0,1fr)] overflow-hidden rounded-lg border border-border">
+            <aside className="flex min-h-0 flex-col border-border border-r bg-background-subtle">
+              <div className="border-border border-b px-3 py-2 font-medium text-xs">{t('writer.documents.title')}</div>
+              <Tabs value={activeKind} onValueChange={handleTabChange} className="min-h-0 flex-1 overflow-y-auto">
+                <TabsList className="flex h-auto w-full flex-col gap-1 bg-transparent p-2">
+                  {WRITER_PROJECT_DOCUMENT_KINDS.map((kind) => (
+                    <TabsTrigger
+                      key={kind}
+                      value={kind}
+                      className="w-full min-w-0 justify-between gap-1.5 border border-transparent bg-transparent px-2.5 shadow-none hover:bg-accent data-[state=active]:border-border data-[state=active]:bg-accent data-[state=active]:shadow-none">
+                      <span className="truncate">{t(DOCUMENT_TAB_LABEL_KEYS[kind])}</span>
+                      {drafts[kind].status !== 'saved' ? (
+                        <Badge variant={drafts[kind].status === 'error' ? 'destructive' : 'outline'}>
+                          {t(DOCUMENT_STATUS_LABEL_KEYS[drafts[kind].status])}
+                        </Badge>
+                      ) : null}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+              <div className="border-border border-t p-2">
+                {activeKind === 'storyBible' ? (
+                  <div className="grid grid-cols-2 gap-1 rounded-md border border-border bg-background p-0.5">
+                    <Button
+                      data-ui="writer.story-studio.mode"
+                      type="button"
+                      size="sm"
+                      variant={editorMode === 'studio' ? 'secondary' : 'ghost'}
+                      aria-pressed={editorMode === 'studio'}
+                      disabled={!canEnterStudio && editorMode !== 'studio'}
+                      onClick={() => setEditorMode('studio')}>
+                      <PanelsTopLeft className="size-3.5" aria-hidden />
+                      {t('writer.story_studio.visual_mode')}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={editorMode === 'json' ? 'secondary' : 'ghost'}
+                      aria-pressed={editorMode === 'json'}
+                      onClick={() => setEditorMode('json')}>
+                      <Braces className="size-3.5" aria-hidden />
+                      {t('writer.story_studio.json_mode')}
+                    </Button>
                   </div>
-                }>
-                <CodeEditor
-                  value={activeDraft.text}
-                  language="json"
-                  editable={activeDraft.status !== 'saving'}
-                  readOnly={activeDraft.status === 'saving'}
-                  onChange={handleEditorChange}
-                  onSave={() => void saveActiveDocument()}
-                  expanded={false}
-                  height="100%"
-                  className="h-full"
-                  theme="none"
-                  options={{ keymap: true, lint: true }}
-                />
-              </Suspense>
-            </div>
+                ) : (
+                  <p className="px-1 py-1.5 text-muted-foreground text-xs leading-5">
+                    {t('writer.documents.schema_hint')}
+                  </p>
+                )}
+              </div>
+            </aside>
 
-            {activeDraft.error ? (
-              <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-destructive text-xs">
-                {activeDraft.error}
-              </p>
-            ) : null}
+            <section className="flex min-h-0 min-w-0 flex-col">
+              <div className="flex shrink-0 items-center justify-between gap-3 border-border border-b px-4 py-2">
+                <span className="text-muted-foreground text-xs leading-5">
+                  {t(studioMode ? 'writer.story_studio.studio_hint' : 'writer.documents.schema_hint')}
+                </span>
+                <Badge variant={activeDraft.status === 'error' ? 'destructive' : 'outline'} className="shrink-0">
+                  {t(DOCUMENT_STATUS_LABEL_KEYS[activeDraft.status])}
+                </Badge>
+              </div>
+              <div
+                role="tabpanel"
+                aria-label={t(DOCUMENT_TAB_LABEL_KEYS[activeKind])}
+                className="min-h-0 flex-1 overflow-hidden [&_.cm-editor]:h-full [&_.cm-scroller]:overflow-auto">
+                {studioMode && editableStoryBible ? (
+                  <WriterStoryBibleForm
+                    storyBible={editableStoryBible}
+                    disabled={activeDraft.status === 'saving'}
+                    onChange={handleStoryBibleChange}
+                  />
+                ) : (
+                  <Suspense
+                    fallback={
+                      <div
+                        role="status"
+                        className="flex h-full items-center justify-center text-muted-foreground text-sm">
+                        {t('common.loading')}
+                      </div>
+                    }>
+                    <CodeEditor
+                      value={activeDraft.text}
+                      language="json"
+                      editable={activeDraft.status !== 'saving'}
+                      readOnly={activeDraft.status === 'saving'}
+                      onChange={handleEditorChange}
+                      onSave={() => void saveActiveDocument()}
+                      expanded={false}
+                      height="100%"
+                      className="h-full"
+                      theme="none"
+                      options={{ keymap: true, lint: true }}
+                    />
+                  </Suspense>
+                )}
+              </div>
+
+              {activeDraft.error ? (
+                <p role="alert" className="m-3 rounded-md bg-destructive/10 px-3 py-2 text-destructive text-xs">
+                  {activeDraft.error}
+                </p>
+              ) : null}
+            </section>
           </div>
 
           <DialogFooter className="items-center sm:justify-between">
@@ -293,4 +361,24 @@ function createDocumentDrafts(project: WriterProject): DocumentDrafts {
 function createDocumentDraft(project: WriterProject, kind: WriterProjectDocumentKind): DocumentDraft {
   const text = formatWriterProjectDocument(project, kind)
   return { baseline: text, error: '', status: 'saved', text }
+}
+
+function parseStoryBibleDraft(source: string): WriterStoryBible | undefined {
+  try {
+    const value = JSON.parse(source) as Partial<WriterStoryBible>
+    if (
+      value.schemaVersion !== 1 ||
+      !Array.isArray(value.hardRules) ||
+      !Array.isArray(value.themes) ||
+      !Array.isArray(value.characters) ||
+      !Array.isArray(value.loreEntries) ||
+      !Array.isArray(value.worldRules) ||
+      !Array.isArray(value.styleGuide)
+    ) {
+      return undefined
+    }
+    return value as WriterStoryBible
+  } catch {
+    return undefined
+  }
 }
