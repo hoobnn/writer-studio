@@ -1,3 +1,12 @@
+> **Writer Studio — a modified fork of [Cherry Studio](https://github.com/CherryHQ/cherry-studio).**
+>
+> This repository is **not** affiliated with or endorsed by CherryHQ. It adds a local
+> novel-writing workspace (Writer Studio) and rebrands the application; upstream
+> vendor services, analytics, and auto-updates are disabled. Changes are tracked on
+> the `product/writer` branch and synced from upstream by merge.
+>
+> Licensed under **AGPL-3.0**, inherited from the upstream project. See [LICENSE](LICENSE).
+
 <div align="right" >
   <details>
     <summary >🌐 Language</summary>
