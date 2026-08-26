@@ -39,6 +39,7 @@ import { translateHandlers } from './translate'
 import { webSearchHandlers } from './webSearch'
 import { webviewHandlers } from './webview'
 import { windowHandlers } from './window'
+import { workshopHandlers } from './workshop'
 import { writerHandlers } from './writer'
 
 /**
@@ -89,5 +90,6 @@ export const ipcHandlers: IpcHandlersFor<IpcRequestSchemas> = {
   ...webSearchHandlers,
   ...webviewHandlers,
   ...windowHandlers,
+  ...workshopHandlers,
   ...writerHandlers
 }

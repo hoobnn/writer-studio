@@ -37,6 +37,7 @@ import { type TranslateEventSchemas, translateRequestSchemas } from './translate
 import { webSearchRequestSchemas } from './webSearch'
 import { webviewRequestSchemas } from './webview'
 import { type WindowEventSchemas, windowRequestSchemas } from './window'
+import { workshopRequestSchemas } from './workshop'
 import { writerRequestSchemas } from './writer'
 
 /**
@@ -85,6 +86,7 @@ export const ipcRequestSchemas = {
   ...webSearchRequestSchemas,
   ...webviewRequestSchemas,
   ...windowRequestSchemas,
+  ...workshopRequestSchemas,
   ...writerRequestSchemas
 } satisfies Record<string, RouteDef>
 

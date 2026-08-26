@@ -303,6 +303,115 @@ export function workshopChapterFilepath(chapterId: WorkshopId): string {
   return `${WORKSHOP_MANUSCRIPT_DIR}/${chapterId}.md`
 }
 
+// ---------------------------------------------------------------------------
+// IpcApi 输入/输出 schema（路由见 src/shared/ipc/schemas/workshop.ts）
+// ---------------------------------------------------------------------------
+
+export const WorkshopProjectCreateInputSchema = z.strictObject({
+  parentDirectory: z.string().trim().min(1),
+  title: z.string().trim().min(1).max(200),
+  genre: z.string().trim().max(200).optional(),
+  premise: z.string().trim().max(10_000).optional(),
+  authorGoal: z.string().trim().max(10_000).optional(),
+  targetWordCount: z.number().int().positive().max(100_000_000).optional()
+})
+export type WorkshopProjectCreateInput = z.infer<typeof WorkshopProjectCreateInputSchema>
+
+export const WorkshopProjectOpenInputSchema = z.strictObject({ rootPath: z.string().trim().min(1) })
+export type WorkshopProjectOpenInput = z.infer<typeof WorkshopProjectOpenInputSchema>
+
+export const WorkshopProjectSnapshotSchema = z.strictObject({
+  rootPath: z.string().min(1),
+  head: WorkshopCommitOidSchema,
+  card: WorkshopProjectCardSchema,
+  chapterIds: z.array(WorkshopIdSchema).max(20_000)
+})
+export type WorkshopProjectSnapshot = z.infer<typeof WorkshopProjectSnapshotSchema>
+
+export const WorkshopEntityListInputSchema = z.strictObject({
+  rootPath: z.string().trim().min(1),
+  collection: WorkshopCollectionSchema
+})
+export type WorkshopEntityListInput = z.infer<typeof WorkshopEntityListInputSchema>
+
+export const WorkshopEntityListResultSchema = z.strictObject({
+  entities: z.array(WorkshopEntitySchema).max(100_000)
+})
+export type WorkshopEntityListResult = z.infer<typeof WorkshopEntityListResultSchema>
+
+export const WorkshopEntityReadInputSchema = WorkshopEntityListInputSchema.extend({ id: WorkshopIdSchema })
+export type WorkshopEntityReadInput = z.infer<typeof WorkshopEntityReadInputSchema>
+
+export const WorkshopChapterReadInputSchema = z.strictObject({
+  rootPath: z.string().trim().min(1),
+  chapterId: WorkshopIdSchema
+})
+export type WorkshopChapterReadInput = z.infer<typeof WorkshopChapterReadInputSchema>
+
+export const WorkshopChapterReadResultSchema = z.strictObject({
+  content: z.string().max(WORKSHOP_MAX_CHAPTER_CHARS)
+})
+export type WorkshopChapterReadResult = z.infer<typeof WorkshopChapterReadResultSchema>
+
+export const WorkshopCanonCommitInputSchema = z.strictObject({
+  rootPath: z.string().trim().min(1),
+  title: z.string().trim().min(1).max(200),
+  changes: WorkshopChangesetSchema
+})
+export type WorkshopCanonCommitInput = z.infer<typeof WorkshopCanonCommitInputSchema>
+
+export const WorkshopProposalCreateInputSchema = z.strictObject({
+  rootPath: z.string().trim().min(1),
+  title: z.string().trim().min(1).max(200),
+  rationale: z.string().max(20_000).optional(),
+  origin: WorkshopOriginSchema,
+  changes: WorkshopChangesetSchema
+})
+export type WorkshopProposalCreateInput = z.infer<typeof WorkshopProposalCreateInputSchema>
+
+export const WorkshopProposalListInputSchema = z.strictObject({ rootPath: z.string().trim().min(1) })
+export type WorkshopProposalListInput = z.infer<typeof WorkshopProposalListInputSchema>
+
+export const WorkshopProposalListResultSchema = z.strictObject({
+  proposals: z.array(WorkshopProposalSchema).max(10_000)
+})
+export type WorkshopProposalListResult = z.infer<typeof WorkshopProposalListResultSchema>
+
+export const WorkshopProposalReadInputSchema = z.strictObject({
+  rootPath: z.string().trim().min(1),
+  id: WorkshopIdSchema
+})
+export type WorkshopProposalReadInput = z.infer<typeof WorkshopProposalReadInputSchema>
+
+export const WorkshopFileDiffSchema = z.strictObject({
+  filepath: z.string().min(1),
+  before: z.string().nullable(),
+  after: z.string().nullable()
+})
+export type WorkshopFileDiff = z.infer<typeof WorkshopFileDiffSchema>
+
+export const WorkshopProposalChangesResultSchema = z.strictObject({
+  changes: z.array(WorkshopFileDiffSchema).max(WORKSHOP_MAX_CHANGES_PER_PROPOSAL)
+})
+export type WorkshopProposalChangesResult = z.infer<typeof WorkshopProposalChangesResultSchema>
+
+export const WorkshopTimelineListInputSchema = z.strictObject({
+  rootPath: z.string().trim().min(1),
+  limit: z.number().int().min(1).max(1_000).default(100)
+})
+export type WorkshopTimelineListInput = z.infer<typeof WorkshopTimelineListInputSchema>
+
+export const WorkshopTimelineListResultSchema = z.strictObject({
+  entries: z.array(WorkshopTimelineEntrySchema).max(1_000)
+})
+export type WorkshopTimelineListResult = z.infer<typeof WorkshopTimelineListResultSchema>
+
+export const WorkshopRollbackInputSchema = z.strictObject({
+  rootPath: z.string().trim().min(1),
+  commit: WorkshopCommitOidSchema
+})
+export type WorkshopRollbackInput = z.infer<typeof WorkshopRollbackInputSchema>
+
 export function workshopChangeFilepath(change: WorkshopChange): string {
   switch (change.op) {
     case 'write_entity':

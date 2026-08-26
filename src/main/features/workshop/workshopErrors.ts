@@ -1,16 +1,7 @@
-export const workshopErrorCodes = {
-  PROJECT_EXISTS: 'workshop.project_exists',
-  NOT_A_PROJECT: 'workshop.not_a_project',
-  INVALID_CHANGESET: 'workshop.invalid_changeset',
-  CHAPTER_NOT_FOUND: 'workshop.chapter_not_found',
-  ENTITY_NOT_FOUND: 'workshop.entity_not_found',
-  PROPOSAL_NOT_FOUND: 'workshop.proposal_not_found',
-  PROPOSAL_NOT_PENDING: 'workshop.proposal_not_pending',
-  PROPOSAL_STALE: 'workshop.proposal_stale',
-  ROLLBACK_TARGET_INVALID: 'workshop.rollback_target_invalid'
-} as const
+import { type WorkshopErrorCode, workshopErrorCodes } from '@shared/ipc/errors/workshop'
 
-export type WorkshopErrorCode = (typeof workshopErrorCodes)[keyof typeof workshopErrorCodes]
+export { workshopErrorCodes }
+export type { WorkshopErrorCode }
 
 export class WorkshopError extends Error {
   constructor(

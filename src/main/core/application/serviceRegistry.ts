@@ -27,6 +27,7 @@ import { WindowManager } from '@main/core/window/WindowManager'
 import { ApiGatewayService } from '@main/features/apiGateway/ApiGatewayService'
 import { FileProcessingService, TesseractRuntimeService } from '@main/features/fileProcessing'
 import { KnowledgeService, KnowledgeVectorStoreService } from '@main/features/knowledge'
+import { WorkshopService } from '@main/features/workshop'
 import { WriterStudioService } from '@main/features/writer'
 import { IpcApiService } from '@main/ipc/IpcApiService'
 import { AnalyticsService } from '@main/services/AnalyticsService'
@@ -150,6 +151,7 @@ export const services = {
   OcrInferenceService,
   KnowledgeService,
   KnowledgeVectorStoreService,
+  WorkshopService,
   WriterStudioService,
   ApiGatewayService,
   AppUpdaterService,
