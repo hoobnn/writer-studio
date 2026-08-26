@@ -1,5 +1,6 @@
 import type { WriterChapterDocument, WriterProject, WriterProposal } from '@shared/types/writer'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -129,6 +130,7 @@ vi.mock('@cherrystudio/ui', async () => {
       )
     },
     Input: (props: React.InputHTMLAttributes<HTMLInputElement>) => <input {...props} />,
+    NormalTooltip: ({ children }: { children: ReactNode }) => <>{children}</>,
     ResizableHandle: () => <div data-testid="resizable-handle" />,
     ResizablePanel: ({ children }: { children: ReactNode }) => <div>{children}</div>,
     ResizablePanelGroup: ({ children }: { children: ReactNode }) => <div>{children}</div>,
@@ -150,6 +152,7 @@ vi.mock('@cherrystudio/ui', async () => {
     Textarea: {
       Input: (props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => <textarea {...props} />
     },
+    useResizablePanelRef: () => React.useRef(null),
     ConfirmDialog: ({ open, title, onConfirm }: { open?: boolean; title?: ReactNode; onConfirm?: () => void }) =>
       open ? (
         <div role="dialog">
@@ -374,6 +377,43 @@ describe('WriterPage', () => {
     expect(screen.getByText('writer.editor.status.dirty')).toBeInTheDocument()
   })
 
+  it('lets writers collapse side panels and restores their previous layout after focus mode', async () => {
+    const user = userEvent.setup()
+    mocks.recentProjectRoot = PROJECT.rootPath
+    mocks.request.mockImplementation(async (route: string) => {
+      if (route === 'writer.project.open') return PROJECT
+      if (route === 'writer.chapter.read') return CHAPTER
+      throw new Error(`Unexpected route: ${route}`)
+    })
+
+    const { WriterPage } = await import('../WriterPage')
+    render(<WriterPage />)
+
+    await waitFor(() => expect(screen.getByLabelText('writer.editor.placeholder')).toBeInTheDocument())
+    expect(screen.getByRole('heading', { name: 'writer.workspace.chapters' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'writer.copilot.title' })).toBeInTheDocument()
+
+    const instruction = screen.getByRole('textbox', { name: 'writer.copilot.instruction' })
+    await user.type(instruction, 'Keep the quiet tension.')
+    await user.click(screen.getByRole('button', { name: 'writer.workspace.hide_copilot' }))
+    expect(screen.queryByRole('heading', { name: 'writer.copilot.title' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'writer.workspace.show_copilot' }))
+    expect(screen.getByRole('textbox', { name: 'writer.copilot.instruction' })).toHaveValue('Keep the quiet tension.')
+
+    await user.click(screen.getByRole('button', { name: 'writer.workspace.hide_chapters' }))
+    expect(screen.queryByRole('heading', { name: 'writer.workspace.chapters' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'writer.workspace.enter_focus' }))
+    expect(screen.queryByRole('heading', { name: 'writer.copilot.title' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'writer.workspace.exit_focus' }))
+    expect(screen.queryByRole('heading', { name: 'writer.workspace.chapters' })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'writer.copilot.title' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'writer.workspace.show_chapters' }))
+    expect(screen.getByRole('heading', { name: 'writer.workspace.chapters' })).toBeInTheDocument()
+  })
+
   it('keeps a mismatched recovery draft in conflict with explicit copy and discard exits', async () => {
     const cacheKey = JSON.stringify([PROJECT.rootPath, CHAPTER.chapter.id])
     mocks.recentProjectRoot = PROJECT.rootPath
@@ -508,6 +548,40 @@ describe('WriterPage', () => {
     expect(screen.getByText('Late lore')).toBeInTheDocument()
     expect(screen.getByText('writer.copilot.lore_status.included')).toBeInTheDocument()
     expect(screen.getByText('writer.copilot.lore_status.dropped')).toBeInTheDocument()
+  })
+
+  it('previews the exact generation context and invalidates it when the instruction changes', async () => {
+    const user = userEvent.setup()
+    mocks.selectFolder.mockResolvedValue(PROJECT.rootPath)
+    mocks.request.mockImplementation(async (route: string) => {
+      if (route === 'writer.project.open') return PROJECT
+      if (route === 'writer.chapter.read') return CHAPTER
+      if (route === 'writer.context.preview') {
+        return { uniqueModelId: 'provider::quick-model', packet: PROPOSAL.contextPacket }
+      }
+      throw new Error(`Unexpected route: ${route}`)
+    })
+
+    const { WriterPage } = await import('../WriterPage')
+    render(<WriterPage />)
+    await user.click(screen.getByRole('button', { name: 'writer.welcome.open_existing' }))
+    await waitFor(() => expect(screen.getByLabelText('writer.editor.placeholder')).toBeInTheDocument())
+
+    await user.click(screen.getByRole('button', { name: 'writer.context.preview' }))
+
+    await waitFor(() => {
+      expect(mocks.request).toHaveBeenCalledWith('writer.context.preview', {
+        rootPath: PROJECT.rootPath,
+        chapterId: CHAPTER.chapter.id,
+        operation: 'continue',
+        uniqueModelId: 'provider::quick-model'
+      })
+    })
+    expect(screen.getByRole('progressbar', { name: 'writer.context.budget_usage' })).toBeInTheDocument()
+    expect(screen.getAllByText('Promises have a cost.').length).toBeGreaterThan(0)
+
+    await user.type(screen.getByRole('textbox', { name: 'writer.copilot.instruction' }), 'Change direction')
+    expect(screen.queryByRole('progressbar', { name: 'writer.context.budget_usage' })).not.toBeInTheDocument()
   })
 
   it('keeps the active job recovery mapping when proposal read fails transiently', async () => {
