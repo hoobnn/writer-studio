@@ -17,7 +17,7 @@ async function closeWriterSurfacesBeforeCleanup(mainWindow: Page): Promise<void>
   const lorebookDialog = uiLocator(mainWindow, 'writer.lorebook.dialog')
   if (await lorebookDialog.isVisible()) {
     await lorebookDialog.getByRole('button', { name: 'Close' }).first().click()
-    const discardButton = mainWindow.getByRole('button', { name: 'Discard and close' })
+    const discardButton = mainWindow.getByRole('button', { name: 'Discard' })
     const needsDiscard = await discardButton
       .waitFor({ state: 'visible', timeout: 500 })
       .then(() => true)
@@ -67,15 +67,15 @@ test.describe('Writer workspace', () => {
 
       await expect(welcome).toBeVisible()
       await mainWindow.evaluate(() => window.api.preference.set('app.language', 'en-US'))
-      const projectLocation = welcome.getByRole('textbox', { name: /^Project location/ })
+      await mainWindow.evaluate(() => window.api.preference.set('ui.theme_mode', 'light'))
+      await expect(mainWindow.locator('html')).not.toHaveClass(/dark/)
+      const projectLocation = welcome.getByRole('textbox', { name: 'Location' })
       await expect(projectLocation).toBeVisible()
       await projectLocation.fill(parentDirectory)
-      await welcome.getByRole('textbox', { name: 'Book title' }).fill('Writer E2E Novel')
+      await welcome.getByRole('textbox', { name: 'Title' }).fill('Writer E2E Novel')
       await welcome.getByRole('textbox', { name: 'Genre' }).fill('Mystery')
-      await welcome.getByRole('spinbutton', { name: 'Target length' }).fill('120000')
-      await welcome
-        .getByRole('textbox', { name: 'Creative premise' })
-        .fill('A locked room promise must be paid before dawn.')
+      await welcome.getByRole('spinbutton', { name: 'Target word count' }).fill('120000')
+      await welcome.getByRole('textbox', { name: 'Premise' }).fill('A locked room promise must be paid before dawn.')
       await welcome.getByRole('button', { name: 'Create project' }).click()
 
       const workspace = uiLocator(mainWindow, 'writer.view')
@@ -88,14 +88,54 @@ test.describe('Writer workspace', () => {
       const [projectEntry] = projectEntries
       if (!projectEntry) throw new Error('Writer project directory was not created')
       const projectRoot = path.join(parentDirectory, projectEntry.name)
+      const screenshotsDirectory = path.join(process.cwd(), 'test-results', 'screenshots')
+      await mkdir(screenshotsDirectory, { recursive: true })
 
-      await workspace.getByRole('button', { name: 'Manage writing documents' }).click()
+      await workspace.getByRole('button', { name: 'Hide Copilot' }).click()
+      await expect(workspace.getByRole('heading', { name: 'Copilot' })).toBeHidden()
+      await workspace.getByRole('button', { name: 'Show Copilot' }).click()
+      await expect(workspace.getByRole('heading', { name: 'Copilot' })).toBeVisible()
+      await workspace.getByRole('button', { name: 'Enter focus mode' }).click()
+      await expect(workspace.getByRole('heading', { name: 'Chapters' })).toBeHidden()
+      await expect(workspace.getByRole('heading', { name: 'Copilot' })).toBeHidden()
+      await workspace.getByRole('button', { name: 'Exit focus mode' }).click()
+      await expect(workspace.getByRole('heading', { name: 'Chapters' })).toBeVisible()
+      await expect(workspace.getByRole('heading', { name: 'Copilot' })).toBeVisible()
+
+      await workspace.getByRole('button', { name: 'Manage documents' }).click()
       const documentsDialog = uiLocator(mainWindow, 'writer.documents.dialog')
       await expect(documentsDialog).toBeVisible()
-      await expect(documentsDialog.getByRole('tab', { name: /Story Bible/ })).toBeVisible()
-      await expect(documentsDialog.getByRole('tabpanel', { name: 'Story Bible' })).toContainText(
+      await expect(documentsDialog.getByRole('heading', { name: 'Story Studio' })).toBeVisible()
+      await expect(documentsDialog.getByRole('tab', { name: /Story bible/i })).toBeVisible()
+      await expect(documentsDialog.getByRole('tabpanel', { name: 'Story bible' })).toContainText(
         'A locked room promise must be paid before dawn.'
       )
+      await documentsDialog
+        .getByRole('textbox', { name: 'Author intent' })
+        .fill('Make every clue earn its place in the final reveal.')
+      await documentsDialog.getByRole('button', { name: 'Add character' }).click()
+      await documentsDialog.getByRole('textbox', { name: 'Name' }).fill('Mara Vale')
+      await documentsDialog.getByRole('textbox', { name: 'Story role' }).fill('Reluctant investigator')
+      await documentsDialog.getByRole('button', { name: 'Save' }).click()
+      await expect
+        .poll(async () => {
+          const storyBible = JSON.parse(
+            await readFile(path.join(projectRoot, '.cherry-writer', 'story-bible.json'), 'utf8')
+          )
+          return {
+            authorGoal: storyBible.authorGoal,
+            characterName: storyBible.characters[0]?.name
+          }
+        })
+        .toEqual({
+          authorGoal: 'Make every clue earn its place in the final reveal.',
+          characterName: 'Mara Vale'
+        })
+      await mainWindow.screenshot({
+        path: path.join(screenshotsDirectory, 'writer-story-studio.png'),
+        fullPage: true,
+        animations: 'disabled'
+      })
       await documentsDialog.getByRole('button', { name: 'Close' }).first().click()
       await expect(documentsDialog).toBeHidden()
 
@@ -103,10 +143,10 @@ test.describe('Writer workspace', () => {
       const lorebookDialog = uiLocator(mainWindow, 'writer.lorebook.dialog')
       await expect(lorebookDialog).toBeVisible()
       await lorebookDialog.locator('[data-ui~="writer.lorebook.add"]').click()
-      await lorebookDialog.getByRole('textbox', { name: 'Entry title' }).fill('The Brass Key')
-      await lorebookDialog.getByRole('textbox', { name: 'Activation keys' }).fill('brass key\nsealed door')
+      await lorebookDialog.getByRole('textbox', { name: 'Title' }).fill('The Brass Key')
+      await lorebookDialog.getByRole('textbox', { name: 'Trigger keys' }).fill('brass key\nsealed door')
       await lorebookDialog
-        .getByRole('textbox', { name: 'Lore content' })
+        .getByRole('textbox', { name: 'Content' })
         .fill('The brass key opens the sealed archive beneath the observatory.')
       await lorebookDialog.getByRole('button', { name: 'Save' }).click()
       await expect
@@ -120,6 +160,20 @@ test.describe('Writer workspace', () => {
       await expect(lorebookDialog.getByText('The Brass Key', { exact: true })).toBeVisible()
       await lorebookDialog.getByRole('button', { name: 'Close' }).first().click()
       await expect(lorebookDialog).toBeHidden()
+
+      await workspace
+        .getByRole('textbox', { name: 'Instruction' })
+        .fill('Continue with the brass key at the sealed door.')
+      await workspace.getByRole('button', { name: 'Preview exact context' }).click()
+      const contextInspector = uiLocator(workspace, 'writer.context.inspector')
+      await expect(contextInspector).toBeVisible()
+      await expect(contextInspector.getByText(/The Brass Key/).first()).toBeVisible()
+      await expect(contextInspector.getByRole('progressbar', { name: /Context budget/ })).toBeVisible()
+      await mainWindow.screenshot({
+        path: path.join(screenshotsDirectory, 'writer-context-preview.png'),
+        fullPage: true,
+        animations: 'disabled'
+      })
 
       const manifestPath = path.join(projectRoot, '.cherry-writer', 'project.json')
       const outlinePath = path.join(projectRoot, '.cherry-writer', 'outline.json')
@@ -156,11 +210,9 @@ test.describe('Writer workspace', () => {
       const continuityReviewDialog = uiLocator(mainWindow, 'writer.continuity-review.dialog')
       await expect(continuityReviewDialog).toBeVisible()
       await continuityReviewDialog.locator('[data-ui~="writer.continuity-review.run"]').click()
-      await expect(
-        continuityReviewDialog.getByText('Chapter draft deviates from its plan', { exact: true })
-      ).toBeVisible()
+      await expect(continuityReviewDialog.getByText('Chapter departs from its plan', { exact: true })).toBeVisible()
       await continuityReviewDialog
-        .getByRole('textbox', { name: 'Why this is intentional' })
+        .getByRole('textbox', { name: 'Reason' })
         .fill('The retreat is an intentional reversal before the midpoint reveal.')
       await continuityReviewDialog.locator('[data-ui~="writer.continuity-review.waive"]').click()
       await expect
@@ -189,12 +241,28 @@ test.describe('Writer workspace', () => {
       await continuityReviewDialog.getByRole('button', { name: 'Close' }).first().click()
       await expect(continuityReviewDialog).toBeHidden()
 
-      const screenshotsDirectory = path.join(process.cwd(), 'test-results', 'screenshots')
-      await mkdir(screenshotsDirectory, { recursive: true })
       await mainWindow.screenshot({
         path: path.join(screenshotsDirectory, 'writer-workspace.png'),
-        fullPage: true
+        fullPage: true,
+        animations: 'disabled'
       })
+
+      await mainWindow.evaluate(() => window.api.preference.set('ui.theme_mode', 'dark'))
+      await expect(mainWindow.locator('html')).toHaveClass(/dark/)
+      await mainWindow.screenshot({
+        path: path.join(screenshotsDirectory, 'writer-workspace-dark.png'),
+        fullPage: true,
+        animations: 'disabled'
+      })
+      await workspace.getByRole('button', { name: 'Manage documents' }).click()
+      await expect(documentsDialog).toBeVisible()
+      await mainWindow.screenshot({
+        path: path.join(screenshotsDirectory, 'writer-story-studio-dark.png'),
+        fullPage: true,
+        animations: 'disabled'
+      })
+      await documentsDialog.getByRole('button', { name: 'Close' }).first().click()
+      await expect(documentsDialog).toBeHidden()
 
       expect(manifest).toMatchObject({ title: 'Writer E2E Novel', targetWordCount: 120000 })
       const storyBible = JSON.parse(
