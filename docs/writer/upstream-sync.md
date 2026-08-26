@@ -23,7 +23,7 @@ sources:
 | Cherry 基线 | 9447bf2e5ea76867d6555f08978762892c7cb0c1 |
 | 基线提交 | fix(chat-messages): always show token usage in the message footer (#19416) |
 | 开发分支 | product/writer |
-| 本地 main | 只做上游镜像，不放本地提交 |
+| 本地 upstream/main | 上游镜像分支，只做快进，不放本地提交 |
 | origin/main | 9447bf2e5ea76867d6555f08978762892c7cb0c1 |
 | 分叉计数 | 见 `git rev-list --count --left-right origin/main...product/writer` |
 | origin | https://github.com/CherryHQ/cherry-studio.git，只读上游，无 push 权限 |
@@ -53,8 +53,8 @@ upstream  https://github.com/CherryHQ/cherry-studio.git
 
 | 分支 | 责任 |
 |---|---|
-| main | 只快进跟随 upstream/main，不放 Writer 提交 |
-| product/writer | Writer 的集成分支，基于 main |
+| upstream/main | 上游镜像，用 `git fetch origin main:upstream/main` 快进，不放 Writer 提交 |
+| product/writer | Writer 的产品线主干，默认分支，从 upstream/main 合并上游 |
 | product/writer-* | 可选的短生命周期子分支，分别承载 domain、main、renderer 或测试 |
 
 一份典型的一次性 remote 调整命令如下，只作为建议。本轮没有执行。
