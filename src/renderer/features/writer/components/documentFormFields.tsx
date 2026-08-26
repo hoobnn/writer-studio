@@ -1,7 +1,19 @@
-import { Button, Input, Textarea } from '@cherrystudio/ui'
+import {
+  Button,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Textarea
+} from '@cherrystudio/ui'
+import type { WriterChapterMetadata } from '@shared/types/writer'
 import { Plus, Trash2 } from 'lucide-react'
 import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
+
+const NONE_VALUE = '__none__'
 
 export function StringListField({
   label,
@@ -157,9 +169,180 @@ export function SectionHeading({ id, title, description }: { id: string; title: 
   )
 }
 
+export function ChapterSelectField({
+  label,
+  value,
+  chapters,
+  disabled,
+  hint,
+  allowNone,
+  noneLabel,
+  onChange
+}: {
+  label: string
+  value: string | undefined
+  chapters: WriterChapterMetadata[]
+  disabled: boolean
+  hint?: string
+  allowNone?: boolean
+  noneLabel?: string
+  onChange: (value: string | undefined) => void
+}) {
+  const labelId = useId()
+  const hintId = useId()
+  // A dangling id (chapter deleted after being referenced) stays visible instead
+  // of being silently dropped on the next save.
+  const dangling = value !== undefined && !chapters.some((chapter) => chapter.id === value)
+
+  return (
+    <div className="space-y-1.5">
+      <span id={labelId} className="block font-medium text-xs">
+        {label}
+      </span>
+      <Select
+        value={value ?? (allowNone ? NONE_VALUE : undefined)}
+        disabled={disabled}
+        onValueChange={(next) => onChange(next === NONE_VALUE ? undefined : next)}>
+        <SelectTrigger
+          className={`w-full ${dangling ? 'border-destructive text-destructive' : ''}`}
+          aria-labelledby={labelId}
+          aria-describedby={hint ? hintId : undefined}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {allowNone ? <SelectItem value={NONE_VALUE}>{noneLabel}</SelectItem> : null}
+          {dangling && value ? (
+            <SelectItem value={value} className="text-destructive">
+              {value}
+            </SelectItem>
+          ) : null}
+          {chapters.map((chapter) => (
+            <SelectItem key={chapter.id} value={chapter.id}>
+              {chapter.title}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {hint ? (
+        <span id={hintId} className="block text-muted-foreground text-xs">
+          {hint}
+        </span>
+      ) : null}
+    </div>
+  )
+}
+
+export function EnumSelectField<Value extends string>({
+  label,
+  value,
+  options,
+  disabled,
+  hint,
+  onChange
+}: {
+  label: string
+  value: Value
+  options: ReadonlyArray<{ value: Value; label: string }>
+  disabled: boolean
+  hint?: string
+  onChange: (value: Value) => void
+}) {
+  const labelId = useId()
+  const hintId = useId()
+
+  return (
+    <div className="space-y-1.5">
+      <span id={labelId} className="block font-medium text-xs">
+        {label}
+      </span>
+      <Select value={value} disabled={disabled} onValueChange={(next) => onChange(next as Value)}>
+        <SelectTrigger className="w-full" aria-labelledby={labelId} aria-describedby={hint ? hintId : undefined}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {hint ? (
+        <span id={hintId} className="block text-muted-foreground text-xs">
+          {hint}
+        </span>
+      ) : null}
+    </div>
+  )
+}
+
+export function NumberField({
+  label,
+  value,
+  min,
+  max,
+  step,
+  integer,
+  disabled,
+  hint,
+  onChange
+}: {
+  label: string
+  value: number
+  min?: number
+  max?: number
+  step?: number | 'any'
+  integer?: boolean
+  disabled: boolean
+  hint?: string
+  onChange: (value: number) => void
+}) {
+  const fieldId = useId()
+  const hintId = useId()
+
+  return (
+    <div className="space-y-1.5">
+      <label htmlFor={fieldId} className="block font-medium text-xs">
+        {label}
+      </label>
+      <Input
+        id={fieldId}
+        type="number"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        disabled={disabled}
+        aria-describedby={hint ? hintId : undefined}
+        onChange={(event) => {
+          const raw = Number(event.target.value)
+          let next = Number.isFinite(raw) ? raw : (min ?? 0)
+          if (integer) next = Math.trunc(next)
+          if (min !== undefined) next = Math.max(min, next)
+          if (max !== undefined) next = Math.min(max, next)
+          onChange(next)
+        }}
+      />
+      {hint ? (
+        <span id={hintId} className="block text-muted-foreground text-xs">
+          {hint}
+        </span>
+      ) : null}
+    </div>
+  )
+}
+
 export function createEntityId(prefix: string, existingIds: string[]): string {
   const existing = new Set(existingIds)
   let suffix = existingIds.length + 1
   while (existing.has(`${prefix}-${suffix}`)) suffix += 1
   return `${prefix}-${suffix}`
+}
+
+/**
+ * Optional array fields serialize as an absent key when emptied — the
+ * repository's canonical form, keeping the semantic document revision stable.
+ */
+export function patchOptionalArray<T>(next: T[]): T[] | undefined {
+  return next.length > 0 ? next : undefined
 }
