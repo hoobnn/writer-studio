@@ -158,7 +158,7 @@ describe('AnalyticsService data collection preference', () => {
   })
 
   it('tracks app launch only once when analytics is re-enabled', async () => {
-    const service = new AnalyticsService()
+    const service = new AnalyticsService(true)
     await service._doInit()
     await vi.waitFor(() => expect(service.isActivated).toBe(true))
     expect(mockTrackAppLaunch).toHaveBeenCalledTimes(1)
@@ -176,7 +176,7 @@ describe('AnalyticsService data collection preference', () => {
 
 describe('AnalyticsService token usage', () => {
   it('forwards reportable usage without changing its source', async () => {
-    const service = new AnalyticsService()
+    const service = new AnalyticsService(true)
     await service._doInit()
     await vi.waitFor(() => expect(service.isActivated).toBe(true))
 
@@ -198,7 +198,7 @@ describe('AnalyticsService token usage', () => {
   })
 
   it('forwards embedding usage when output tokens are zero', async () => {
-    const service = new AnalyticsService()
+    const service = new AnalyticsService(true)
     await service._doInit()
     await vi.waitFor(() => expect(service.isActivated).toBe(true))
 
@@ -220,7 +220,7 @@ describe('AnalyticsService token usage', () => {
   })
 
   it('does not forward usage when all token counts are zero', async () => {
-    const service = new AnalyticsService()
+    const service = new AnalyticsService(true)
     await service._doInit()
     await vi.waitFor(() => expect(service.isActivated).toBe(true))
 
