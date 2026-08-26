@@ -130,7 +130,7 @@ atomicWriteFile 会在同目录创建 0600 临时文件，sync 后 rename。项�
 | WriterProposal | 模型建议、目标章节、baseRevision、模型、应用状态和 ContextPacket | .cherry-writer/proposals |
 | WriterGenerationOutput | job handler 返回的 proposalId | JobManager 完成结果；完整 proposal 只在作品目录 |
 
-story bible、outline 与 continuity 已可在 JSON editor 中人工维护。AI 生成这些结构资料的 proposal 与结构化 apply 仍未实现，后续接入时要服从 documentRevision 门禁。
+story bible、outline 与 continuity 均可在结构化表单或 JSON editor 中人工维护。AI 生成这些结构资料的 proposal 与结构化 apply 仍未实现，后续接入时要服从 documentRevision 门禁。
 
 ## 不变量
 
@@ -230,7 +230,7 @@ manifest 已保存 targetWordCount，当前 generation prompt 还没有把它拆
 
 作者保存章节时携带 expectedRevision。主进程通过项目锁和 revision gate 写入，并在产生 history 前检查最终正文上限。800ms autosave 的热路径只加载四份小 JSON 与目标章，不在 Service 和 Repository 重复打开完整项目。普通保存每章 30 秒内最多新增一份快照，默认最多保留 100 份；proposal apply 无视节流并强制快照。保存成功返回新的 ChapterDocument，UI 用返回值更新本地状态。
 
-story bible、outline 与 continuity 使用各自的语义 SHA-256 revision。Story Studio 默认以结构化表单编辑 story bible，覆盖故事罗盘、创作护栏、主题、风格、世界规则和人物卡；原始 JSON 保留为高级模式，outline 与 continuity 暂时仍使用 JSON。两种模式共享同一份 draft、shared schema 和 expectedRevision，保存中的文档锁定编辑，其他 tab 的新草稿不会被旧响应覆盖。
+story bible、outline 与 continuity 使用各自的语义 SHA-256 revision。Story Studio 三个 tab 均默认以结构化表单编辑并各自记忆编辑模式：story bible 覆盖故事罗盘、创作护栏、主题、风格、世界规则和人物卡；outline 覆盖全书梗概、故事弧与章节计划（含硬性要求）；continuity 以五个子标签页覆盖事实、伏笔、章节摘要、时间线事件与人物状态，章节与人物引用一律下拉选择，每个字段附一行说明其对上下文注入与连续性审查的影响。原始 JSON 保留为高级模式，草稿非法时回落到 JSON editor。两种模式共享同一份 draft、shared schema 和 expectedRevision，保存中的文档锁定编辑，其他 tab 的新草稿不会被旧响应覆盖。
 
 Lorebook Dialog 复用 story bible save route 和同一 documentRevision。它提供条目列表、内容、逐行 key aliases、enabled、alwaysActive、caseSensitive、matchWholeWords 与 order 编辑。保存前重新解析完整 `WriterStoryBibleSchema`，冲突时保留本地条目并提示作者。Memory Summary 显示 lore 总数，Copilot 用 shared matcher 延迟计算当前 active 数，避免 UI 与主进程采用两套规则。
 
