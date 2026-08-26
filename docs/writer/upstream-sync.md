@@ -85,7 +85,7 @@ src/renderer/routes/app/writer.tsx
 docs/writer/
 ```
 
-主进程领域目录内包含 WriterStudioService、WriterProjectRepository、writerContext、writerPrompts、writerModelPolicy、writerGenerationJobHandler、writerContinuityReview 和 writerErrors。`writerContinuityReview.ts` 是不调用模型的 typed 检查器，portable report、coverage 与 waiver 仍由 Repository 保存。纯函数 `src/shared/utils/writerLore.ts` 由 main 与 renderer 共用，负责 lore 扫描文本、普通 key 匹配和稳定排序。renderer 通过 feature barrel 暴露 WriterPage，route 文件不应穿透到内部组件。Lorebook 与 Continuity Review Dialog 留在 renderer feature 内，不能升到中央页面或通用 store。
+主进程领域目录内包含 WriterStudioService、WriterProjectRepository、writerContext、writerProjectContext、writerPrompts、writerModelPolicy、writerGenerationJobHandler、writerContinuityReview 和 writerErrors。`writerProjectContext.ts` 是 preview 与 generation 共用的项目装载边界，`writerContext.ts` 保持纯 compiler；`writerContinuityReview.ts` 是不调用模型的 typed 检查器，portable report、coverage 与 waiver 仍由 Repository 保存。纯函数 `src/shared/utils/writerLore.ts` 由 main 与 renderer 共用，负责 lore 扫描文本、普通 key 匹配和稳定排序。renderer 通过 feature barrel 暴露 WriterPage，route 文件不应穿透到内部组件。Story Studio、Lorebook、Context Inspector 与 Continuity Review Dialog 留在 renderer feature 内，不能升到中央页面或通用 store。
 
 ## 中央薄接入点
 

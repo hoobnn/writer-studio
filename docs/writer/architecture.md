@@ -230,13 +230,15 @@ manifest 已保存 targetWordCount，当前 generation prompt 还没有把它拆
 
 作者保存章节时携带 expectedRevision。主进程通过项目锁和 revision gate 写入，并在产生 history 前检查最终正文上限。800ms autosave 的热路径只加载四份小 JSON 与目标章，不在 Service 和 Repository 重复打开完整项目。普通保存每章 30 秒内最多新增一份快照，默认最多保留 100 份；proposal apply 无视节流并强制快照。保存成功返回新的 ChapterDocument，UI 用返回值更新本地状态。
 
-story bible、outline 与 continuity 使用各自的语义 SHA-256 revision。Documents Dialog 以完整 JSON 编辑并经 shared schema 校验，保存时携带 expectedRevision；保存中的文档锁定编辑，其他 tab 的新草稿不会被旧响应覆盖。
+story bible、outline 与 continuity 使用各自的语义 SHA-256 revision。Story Studio 默认以结构化表单编辑 story bible，覆盖故事罗盘、创作护栏、主题、风格、世界规则和人物卡；原始 JSON 保留为高级模式，outline 与 continuity 暂时仍使用 JSON。两种模式共享同一份 draft、shared schema 和 expectedRevision，保存中的文档锁定编辑，其他 tab 的新草稿不会被旧响应覆盖。
 
 Lorebook Dialog 复用 story bible save route 和同一 documentRevision。它提供条目列表、内容、逐行 key aliases、enabled、alwaysActive、caseSensitive、matchWholeWords 与 order 编辑。保存前重新解析完整 `WriterStoryBibleSchema`，冲突时保留本地条目并提示作者。Memory Summary 显示 lore 总数，Copilot 用 shared matcher 延迟计算当前 active 数，避免 UI 与主进程采用两套规则。
 
 未保存正文按项目与章节写入有界 renderer recovery cache。revision 相同的恢复稿重开为 dirty，revision 已变化的恢复稿进入 conflict，用户可以复制草稿或明确丢弃并重新载入。该缓存不替代项目目录中的正文。
 
 ### AI 生成
+
+作者可以先运行 `writer.context.preview`。Renderer 先 flush 当前编辑器，再由主进程解析同一模型窗口预算，并通过 `writerProjectContext` 调用真实 context compiler。返回的 ContextPacket 显示来源正文、来源类型、预算、截断和 Lore 激活回执，不入队、不调用模型。operation、instruction 或模型变化后旧预览立即失效；真正生成会重新读取文件并编译，proposal 保存实际使用的 packet。
 
 1. renderer 发送 rootPath、chapterId、operation、instruction 和模型选择。
 2. renderer 显式提交当前展示的 Quick 或手选模型；只有本地没有可展示模型时才省略模型，由 WriterStudioService 解析 managed default。服务按 contextWindow 和 instruction 计算 contextBudgetChars，再构造 job payload 并入队。
@@ -289,7 +291,8 @@ renderer feature
         -> WriterProjectRepository
         -> writerContinuityReview
         -> shared writerLore matcher
-        -> writerContext
+        -> writerProjectContext
+          -> writerContext
         -> JobManager
           -> writerGenerationJobHandler
             -> AiService
@@ -301,7 +304,7 @@ renderer feature
 | src/shared/utils/writerLore.ts | renderer 与 main 共用的纯扫描、规范化和排序函数 | fs、React、模型调用、状态写入 |
 | src/shared/ipc/schemas/writer.ts | request 与 result schema | 业务流程、磁盘 IO |
 | src/main/ipc/handlers/writer.ts | 参数转发、错误映射 | 上下文算法、直接模型调用 |
-| src/main/features/writer | 文件事实层、锁、确定性 continuity review、上下文、job handler | React、renderer store |
+| src/main/features/writer | 文件事实层、锁、确定性 continuity review、项目上下文装载、纯 context compiler、job handler | React、renderer store |
 | src/renderer/features/writer | 正文与结构资料编辑器、artifact 浏览与恢复、行级 diff、proposal 审阅和 job 展示 | Node fs、provider SDK、JobManager |
 | src/renderer/routes/app/writer.tsx | 从 feature barrel 引入页面 | 领域实现 |
 | src/renderer/windows/main/MainApp.tsx | 只用 TabsProvider.initialDefaultTab 为首次或空会话指定 /app/writer | 修改 TabsProvider 内部默认值、覆盖持久 tab 恢复 |
@@ -422,6 +425,7 @@ renderer feature
 - WriterPage 可恢复有界未保存草稿与 active job，UI 在应用或恢复前保存编辑器正文。
 - 完整打开以 stat 校验全稿，autosave 只读取小 JSON 与目标章。
 - 生成前外发提示可见，生成结果不会自行写入正史。
+- context preview 与 generation handler 复用 `writerProjectContext`；预览不调用模型，实际 proposal 仍保存生成时重新编译的 ContextPacket。
 - Writer 没有新增 Cherry 主作品表或 migration。
 
 下面项目仍需补充深度集成验证，不应写成已经完成。
