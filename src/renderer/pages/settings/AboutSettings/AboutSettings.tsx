@@ -32,23 +32,13 @@ import { cn } from '@renderer/utils/style'
 import { UpgradeChannel } from '@shared/data/preference/preferenceTypes'
 import { DISTRIBUTION } from '@shared/utils/distribution'
 import { debounce } from 'es-toolkit/compat'
-import {
-  BadgeQuestionMark,
-  Briefcase,
-  Bug,
-  Building2,
-  FileArchive,
-  Github,
-  Globe,
-  Mail,
-  MessageSquareText,
-  Rss
-} from 'lucide-react'
+import { BadgeQuestionMark, Bug, FileArchive, Github } from 'lucide-react'
 import type { FC, ReactNode } from 'react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import DiagnosticBundleDialog from './DiagnosticBundleDialog'
+import { VendorAboutRows } from './VendorAboutRows'
 
 const AboutSettings: FC = () => {
   const [autoCheckUpdate, setAutoCheckUpdate] = usePreference('app.dist.auto_update.enabled')
@@ -330,52 +320,13 @@ const AboutSettings: FC = () => {
           actionLabel={t('settings.about.website.button')}
           onAction={onOpenDocs}
         />
-        {DISTRIBUTION.upstreamServicesEnabled && (
-          <>
-            <Divider className="my-3" />
-            <AboutActionRow
-              icon={<Rss className="size-4.5" />}
-              title={t('settings.about.releases.title')}
-              actionLabel={t('settings.about.releases.button')}
-              onAction={showReleases}
-            />
-            <Divider className="my-3" />
-            <AboutActionRow
-              icon={<Globe className="size-4.5" />}
-              title={t('settings.about.website.title')}
-              actionLabel={t('settings.about.website.button')}
-              onAction={() => onOpenWebsite('https://cherry-ai.com')}
-            />
-            <Divider className="my-3" />
-            <AboutActionRow
-              icon={<MessageSquareText className="size-4.5" />}
-              title={t('settings.about.feedback.title')}
-              actionLabel={t('settings.about.feedback.button')}
-              onAction={() => setFeedbackOpen(true)}
-            />
-            <Divider className="my-3" />
-            <AboutActionRow
-              icon={<Building2 className="size-4.5" />}
-              title={t('settings.about.enterprise.title')}
-              actionLabel={t('settings.about.website.button')}
-              onAction={showEnterprise}
-            />
-            <Divider className="my-3" />
-            <AboutActionRow
-              icon={<Mail className="size-4.5" />}
-              title={t('settings.about.contact.title')}
-              actionLabel={t('settings.about.contact.button')}
-              onAction={mailto}
-            />
-            <Divider className="my-3" />
-            <AboutActionRow
-              icon={<Briefcase className="size-4.5" />}
-              title={t('settings.about.careers.title')}
-              actionLabel={t('settings.about.careers.button')}
-              onAction={() => onOpenWebsite('https://www.cherry-ai.com/careers')}
-            />
-          </>
-        )}
+        <VendorAboutRows
+          onOpenWebsite={onOpenWebsite}
+          onShowReleases={showReleases}
+          onShowEnterprise={showEnterprise}
+          onMailto={mailto}
+          onFeedback={() => setFeedbackOpen(true)}
+        />
         <Divider className="my-3" />
         <AboutActionRow
           icon={<FileArchive className="size-4.5" />}
