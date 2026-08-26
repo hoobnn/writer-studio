@@ -1,113 +1,109 @@
 <div align="center">
 
+**简体中文** | [English](README.en.md)
+
 # ✍️ Writer Studio
 
-**A local-first workspace for writing long-form fiction, built on [Cherry Studio](https://github.com/CherryHQ/cherry-studio).**
+**一个本地优先的长篇小说写作工作区，基于 [Cherry Studio](https://github.com/CherryHQ/cherry-studio) 构建。**
 
-Your manuscript, story bible, and revision history stay in plain files on your own disk.
-The model only ever sees the context you can inspect.
+正文、故事圣经与修订历史都以普通文件保存在你自己的磁盘上。
+模型看到的每一段上下文，你都可以事先查看。
 
 </div>
 
 > [!NOTE]
-> This is a **modified fork** of [Cherry Studio](https://github.com/CherryHQ/cherry-studio) and is
-> **not affiliated with or endorsed by CherryHQ**. It adds the Writer Studio workspace and rebrands
-> the application; upstream vendor services, analytics, and auto-updates are disabled.
-> Licensed under **AGPL-3.0**, inherited from the upstream project.
+> 本仓库是 [Cherry Studio](https://github.com/CherryHQ/cherry-studio) 的**修改版分支**，
+> **与 CherryHQ 无隶属关系，也未获其背书**。它新增了 Writer Studio 工作区并更换了品牌标识；
+> 上游的厂商服务、数据分析与自动更新均已关闭。
+> 依据上游项目继承 **AGPL-3.0** 授权。
 
-## Why this exists
+## 为什么做这个
 
-Long-form fiction breaks the assumptions most chat UIs are built on. Five problems keep recurring:
+长篇小说写作会打破多数对话式界面的设计前提。有五类问题反复出现：
 
-1. Prose, story bible, outline, and continuity notes drift apart as the draft grows.
-2. You cannot tell what the model actually saw, or why a key detail was left out.
-3. AI output overwrites your words, and stale suggestions get applied to prose that has since changed.
-4. Your material is locked to a platform, making it costly to switch tools or branch a storyline.
-5. The more features a tool adds, the more the writing surface shrinks.
+1. 正文、故事圣经、大纲与连续性记录会随着稿件增长逐渐分叉。
+2. 你无从得知模型实际看到了什么，也不知道关键设定为何被遗漏。
+3. AI 的输出会覆盖你的文字，过期的建议还可能被套用到已经改动过的正文上。
+4. 创作资料被平台锁定，更换工具或另起一条故事线的成本很高。
+5. 功能越加越多，真正用来码字的空间反而被压缩。
 
-Writer Studio addresses these directly rather than adding another chat window.
+Writer Studio 直接针对这些问题，而不是再加一个聊天窗口。
 
-## What it does
+## 它做什么
 
-**Portable projects.** A book is a folder on your disk. Manifest, story bible, outline, continuity,
-manuscript, proposals, and history are all plain JSON and text you can read, back up, diff, or move
-to another machine. Nothing about your book lives only in an app database.
+**可移植的作品目录。** 一本书就是磁盘上的一个文件夹。manifest、故事圣经、大纲、连续性记录、
+正文、提案与历史快照，全部是你可以直接阅读、备份、diff 或迁移到另一台机器的纯 JSON 与文本。
+作品的任何部分都不会只存在于应用数据库里。
 
-**AI proposes, never overwrites.** Generation always produces a *proposal*. You see the sources it
-used, a preview, and a line-level diff against your prose before anything is applied. Only an applied
-proposal advances canon — and each operation has a strict target: drafts and rewrites can replace,
-continuations can only append, and analytical proposals cannot touch prose at all.
+**AI 只提案，绝不直接覆写。** 生成过程永远先产出一份*提案*。在任何内容被应用之前，你会看到它
+用了哪些来源、生成结果预览，以及与你正文的行级 diff。只有被应用的提案才会推进正史——而且每种
+操作都有严格的写入目标：草稿与改写只能替换，续写只能追加，分析类提案完全不能改动正文。
 
-**You can see the exact context.** Before generating, preview the precise text and story data that
-will be sent, with per-source budget accounting, truncation receipts, and which lorebook entries
-activated. No guessing about what the model received.
+**可以查看确切的上下文。** 生成前可以预览将要发送的确切正文与故事数据，包含逐来源的预算占用、
+截断回执，以及哪些 lorebook 条目被激活。模型收到了什么，不用猜。
 
-**Revision gates.** Prose and each structured document carry their own content revision. A proposal
-built against an older draft is refused rather than silently applied over your newer text.
+**修订门禁。** 正文与每份结构化文档各自带有内容修订标识。基于旧稿生成的提案会被拒绝，
+而不是静默地覆盖你更新过的文字。
 
-**Deterministic continuity review.** A typed checker — not a model — reports continuity findings,
-coverage, and author waivers. Results are saved alongside the project and travel with it.
+**确定性连续性检查。** 由类型化检查器（而非模型）给出连续性问题、覆盖范围与作者豁免记录，
+结果与作品保存在一起，可随作品迁移。
 
-**History and recovery.** Chapters snapshot as you write, with list, read, and restore; restoring
-first snapshots the current text. Unsaved drafts and in-flight generation jobs survive a restart.
+**历史与恢复。** 章节在写作过程中自动生成快照，支持列出、读取与恢复；恢复前会先为当前正文
+反向生成一份快照。未保存的草稿与进行中的生成任务在重启后仍可恢复。
 
-**A workspace that stays out of the way.** Collapsible chapter and copilot panes, plus a focus mode
-that clears both and restores your layout on exit.
+**不碍事的工作区。** 章节栏与 Copilot 栏均可折叠，专注模式可一键收起两侧，退出时恢复原有布局。
 
-## Built on Cherry Studio
+## 基于 Cherry Studio
 
-Everything the upstream project provides is still here — a mature desktop AI client with broad
-provider support (OpenAI, Anthropic, Gemini, local models via Ollama and LM Studio), MCP servers,
-knowledge bases, document processing, and translation. Writer Studio adds a writing workspace on top
-of that foundation rather than reinventing it.
+上游项目提供的能力全部保留——一个成熟的桌面 AI 客户端，支持广泛的服务商（OpenAI、Anthropic、
+Gemini，以及通过 Ollama 和 LM Studio 运行的本地模型）、MCP 服务、知识库、文档处理与翻译。
+Writer Studio 是在这个基座之上增加写作工作区，而不是重新造一遍。
 
-## Development
+## 开发
 
 ```bash
 pnpm install
 pnpm dev
 ```
 
-| Command | Purpose |
+| 命令 | 用途 |
 | --- | --- |
-| `pnpm lint` | Format, lint, typecheck, and i18n check |
-| `pnpm test` | Full test suite |
-| `pnpm build:check` | The complete gate: lint + docs + tests |
+| `pnpm lint` | 格式化、lint、类型检查与 i18n 校验 |
+| `pnpm test` | 完整测试套件 |
+| `pnpm build:check` | 完整门禁：lint + docs + 测试 |
 
-Design notes and architecture decisions live in [`docs/writer/`](docs/writer/):
+设计说明与架构决策见 [`docs/writer/`](docs/writer/)：
 
-- [Architecture decisions](docs/writer/architecture.md) — portable projects, proposal gating, context assembly
-- [Upstream sync](docs/writer/upstream-sync.md) — branch layout and how changes are merged from Cherry Studio
-- [Product benchmark](docs/writer/product-benchmark.md) — comparison against other AI writing tools
+- [架构决策](docs/writer/architecture.md) — 可移植作品目录、提案门禁、上下文装配
+- [上游同步](docs/writer/upstream-sync.md) — 分支布局与从 Cherry Studio 合并变更的方式
+- [产品对照](docs/writer/product-benchmark.md) — 与其他 AI 写作工具的对比
 
-## Contributing
+## 参与贡献
 
-Issues and pull requests are welcome. Development targets the `product/writer` branch.
+欢迎提交 issue 与 pull request。开发面向 `product/writer` 分支。
 
-Bugs in Cherry Studio itself belong
-[upstream](https://github.com/CherryHQ/cherry-studio/issues), not here.
+Cherry Studio 自身的缺陷请提交到
+[上游仓库](https://github.com/CherryHQ/cherry-studio/issues)，而不是这里。
 
-## Acknowledgements
+## 致谢
 
-Writer Studio exists because of [**Cherry Studio**](https://github.com/CherryHQ/cherry-studio) and
-the work of [its contributors](https://github.com/CherryHQ/cherry-studio/graphs/contributors).
+Writer Studio 得以存在，完全建立在 [**Cherry Studio**](https://github.com/CherryHQ/cherry-studio)
+及[其贡献者](https://github.com/CherryHQ/cherry-studio/graphs/contributors)的工作之上。
 
-The upstream project provides the entire foundation this builds on: the Electron application shell,
-the AI provider layer, the data and IPC architecture, the component library, and years of
-accumulated engineering. This fork changes a small fraction of that surface and inherits the rest.
-Sincere thanks to the CherryHQ team and everyone who has contributed to it.
+上游项目提供了这个项目所依赖的全部基座：Electron 应用外壳、AI 服务商接入层、数据与 IPC 架构、
+组件库，以及多年积累的工程实现。本分支只改动了其中很小一部分，其余全部继承自上游。
+在此向 CherryHQ 团队以及每一位为之贡献过的人致以诚挚的谢意。
 
-If you want a general-purpose AI desktop client, use
-[Cherry Studio](https://github.com/CherryHQ/cherry-studio) — it is the better choice, and it is
-actively maintained by a real team.
+如果你需要的是一个通用的 AI 桌面客户端，请直接使用
+[Cherry Studio](https://github.com/CherryHQ/cherry-studio)——那是更好的选择，
+而且由一支真正的团队在持续维护。
 
-## License
+## 许可证
 
-[AGPL-3.0](LICENSE), inherited from Cherry Studio.
+[AGPL-3.0](LICENSE)，继承自 Cherry Studio。
 
-As a derivative work, this project is distributed under the same terms. If you distribute a modified
-version, or run it as a network service, you must make the corresponding source available under
-AGPL-3.0.
+作为衍生作品，本项目以相同条款分发。如果你分发修改后的版本，或将其作为网络服务运行，
+必须依据 AGPL-3.0 提供对应的源码。
 
-The upstream project offers commercial licensing that exempts you from AGPL-3.0 requirements; that
-arrangement is between you and CherryHQ (bd@cherry-ai.com) and does not extend to this fork.
+上游项目提供可豁免 AGPL-3.0 要求的商业授权；该授权是你与 CherryHQ（bd@cherry-ai.com）
+之间的约定，**不延伸至本分支**。
