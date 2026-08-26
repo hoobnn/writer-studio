@@ -6,7 +6,6 @@ import type { JobHandler } from '@main/core/job/types'
 import type { UniqueModelId } from '@shared/data/types/model'
 import { writerErrorCodes } from '@shared/ipc/errors/writer'
 import {
-  type WriterChapterDocument,
   type WriterGenerationOutput,
   WriterGenerationOutputSchema,
   type WriterOperation,
@@ -14,8 +13,8 @@ import {
   type WriterProposal
 } from '@shared/types/writer'
 
-import { compileWriterContext } from './writerContext'
 import { isWriterStudioError, WriterStudioError } from './writerErrors'
+import { compileWriterProjectContext } from './writerProjectContext'
 import type { WriterProjectRepository } from './WriterProjectRepository'
 import { buildWriterGenerationPrompt } from './writerPrompts'
 import { writerDocumentRevisionsEqual } from './writerRevisions'
@@ -124,18 +123,10 @@ export function createWriterGenerationJobHandler(
           )
         }
 
-        const recentMetadata = project.manifest.chapters
-          .filter((chapter) => chapter.order < currentChapter.chapter.order)
-          .sort((a, b) => b.order - a.order)
-          .slice(0, 3)
-        const recentChapters: WriterChapterDocument[] = []
-        for (const chapter of recentMetadata) {
-          recentChapters.push(await repository.readChapterFromProject(project, chapter.id))
-        }
-        const packet = compileWriterContext({
+        const packet = await compileWriterProjectContext({
+          repository,
           project,
           currentChapter,
-          recentChapters,
           instruction: ctx.input.instruction,
           operation: ctx.input.operation,
           budgetChars: ctx.input.contextBudgetChars

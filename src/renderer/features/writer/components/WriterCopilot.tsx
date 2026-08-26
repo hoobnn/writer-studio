@@ -14,9 +14,11 @@ import { useDefaultModel } from '@renderer/hooks/useModel'
 import { ipcApi } from '@renderer/ipc'
 import type { Model } from '@shared/data/types/model'
 import {
+  type WriterContextPacket,
   WriterGenerationOutputSchema,
   type WriterOperation,
   type WriterProject,
+  type WriterProjectDocumentRevisions,
   type WriterProposal,
   type WriterProposalMode
 } from '@shared/types/writer'
@@ -26,11 +28,12 @@ import {
   formatWriterChapterPlanContext,
   selectActiveWriterLoreEntries
 } from '@shared/utils/writerLore'
-import { Bot, Check, Sparkles, Square, WandSparkles } from 'lucide-react'
+import { Bot, Check, Eye, Sparkles, Square, WandSparkles } from 'lucide-react'
 import { lazy, Suspense, useCallback, useDeferredValue, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { getProposalApplyModes } from '../utils'
+import { WriterContextInspector } from './WriterContextInspector'
 import { WriterProposalDiff } from './WriterProposalDiff'
 import { WriterProposalLibrary } from './WriterProposalLibrary'
 
@@ -79,6 +82,15 @@ interface WriterCopilotProps {
   onActiveJobIdChange: (jobId: string | undefined) => void
 }
 
+interface ContextPreviewState {
+  packet: WriterContextPacket
+  currentContent: string
+  documentRevisions: WriterProjectDocumentRevisions
+  instruction: string
+  operation: WriterOperation
+  uniqueModelId?: string
+}
+
 export function WriterCopilot({
   project,
   chapterId,
@@ -100,7 +112,9 @@ export function WriterCopilot({
   const [activeJobId, setActiveJobId] = useState<string | undefined>(initialActiveJobId)
   const [jobTerminal, setJobTerminal] = useState(!initialActiveJobId)
   const [proposal, setProposal] = useState<WriterProposal>()
+  const [contextPreviewState, setContextPreviewState] = useState<ContextPreviewState>()
   const [errorMessage, setErrorMessage] = useState('')
+  const [previewing, setPreviewing] = useState(false)
   const [starting, setStarting] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [applyingMode, setApplyingMode] = useState<WriterProposalMode>()
@@ -111,6 +125,17 @@ export function WriterCopilot({
   const proposalApplyModes = proposal ? getProposalApplyModes(proposal.operation) : []
   const proposalCanReplace = proposalApplyModes.includes('replace')
   const proposalCanAppend = proposalApplyModes.includes('append')
+  const contextPreview =
+    contextPreviewState &&
+    contextPreviewState.currentContent === currentContent &&
+    contextPreviewState.instruction === instruction &&
+    contextPreviewState.operation === operation &&
+    contextPreviewState.uniqueModelId === effectiveModel?.id &&
+    contextPreviewState.documentRevisions.storyBible === project.documentRevisions.storyBible &&
+    contextPreviewState.documentRevisions.outline === project.documentRevisions.outline &&
+    contextPreviewState.documentRevisions.continuity === project.documentRevisions.continuity
+      ? contextPreviewState.packet
+      : undefined
 
   const startGeneration = async () => {
     setStarting(true)
@@ -139,6 +164,37 @@ export function WriterCopilot({
       setJobTerminal(true)
     } finally {
       setStarting(false)
+    }
+  }
+
+  const previewContext = async () => {
+    setPreviewing(true)
+    setErrorMessage('')
+    try {
+      if (!(await onBeforeGeneration())) {
+        setErrorMessage(t('writer.errors.save_chapter'))
+        return
+      }
+      const normalizedInstruction = instruction.trim()
+      const preview = await ipcApi.request('writer.context.preview', {
+        rootPath: project.rootPath,
+        ...(chapterId ? { chapterId } : {}),
+        operation,
+        ...(normalizedInstruction ? { instruction: normalizedInstruction } : {}),
+        ...(effectiveModel ? { uniqueModelId: effectiveModel.id } : {})
+      })
+      setContextPreviewState({
+        packet: preview.packet,
+        currentContent,
+        documentRevisions: project.documentRevisions,
+        instruction,
+        operation,
+        uniqueModelId: effectiveModel?.id
+      })
+    } catch {
+      setErrorMessage(t('writer.errors.preview_context'))
+    } finally {
+      setPreviewing(false)
     }
   }
 
@@ -227,7 +283,10 @@ export function WriterCopilot({
             multiple={false}
             value={effectiveModel}
             onSelect={(model) => {
-              if (model) setSelectedModel(model)
+              if (model) {
+                setSelectedModel(model)
+                setContextPreviewState(undefined)
+              }
             }}
             filter={writerModelFilter}
             trigger={
@@ -249,7 +308,12 @@ export function WriterCopilot({
           <span id={operationLabelId} className="font-medium text-xs">
             {t('writer.copilot.operation')}
           </span>
-          <Select value={operation} onValueChange={(value) => setOperation(value as WriterOperation)}>
+          <Select
+            value={operation}
+            onValueChange={(value) => {
+              setOperation(value as WriterOperation)
+              setContextPreviewState(undefined)
+            }}>
             <SelectTrigger className="w-full" aria-labelledby={operationLabelId}>
               <SelectValue />
             </SelectTrigger>
@@ -267,32 +331,53 @@ export function WriterCopilot({
           <span className="font-medium text-xs">{t('writer.copilot.instruction')}</span>
           <Textarea.Input
             value={instruction}
-            onChange={(event) => setInstruction(event.target.value)}
+            onChange={(event) => {
+              setInstruction(event.target.value)
+              setContextPreviewState(undefined)
+            }}
             placeholder={t('writer.copilot.instruction_placeholder')}
             className="min-h-20 resize-y"
           />
         </label>
 
-        <section className="space-y-2 rounded-lg border border-border bg-background-subtle p-2.5">
+        <section className="space-y-2.5 rounded-lg border border-border bg-background-subtle p-2.5">
           <div className="flex items-center justify-between gap-2">
             <h3 className="font-medium text-xs">{t('writer.copilot.context_sources')}</h3>
             <Badge variant="outline">{t('writer.memory.active')}</Badge>
           </div>
-          <p className="text-muted-foreground text-xs leading-5">{t('writer.copilot.context_sources_hint')}</p>
-          <div className="flex flex-wrap gap-1">
-            <ContextSourceBadge
-              label={t('writer.copilot.source_hard_rules')}
-              count={project.storyBible.hardRules.length}
-            />
-            <ContextSourceBadge label={t('writer.copilot.source_chapter_plan')} count={activeChapterPlan ? 1 : 0} />
-            <ContextSourceBadge label={t('writer.copilot.source_story_arcs')} count={project.outline.arcs.length} />
-            <ContextSourceBadge
-              label={t('writer.copilot.source_characters')}
-              count={project.storyBible.characters.length}
-            />
-            <ContextSourceBadge label={t('writer.copilot.source_lorebook')} count={activeLoreEntries.length} />
-            <ContextSourceBadge label={t('writer.copilot.source_foreshadowing')} count={openForeshadowingCount} />
-          </div>
+          {contextPreview ? (
+            <WriterContextInspector packet={contextPreview} title={t('writer.context.preview_result')} />
+          ) : (
+            <>
+              <p className="text-muted-foreground text-xs leading-5">{t('writer.context.preview_hint')}</p>
+              <div className="flex flex-wrap gap-1">
+                <ContextSourceBadge
+                  label={t('writer.copilot.source_hard_rules')}
+                  count={project.storyBible.hardRules.length}
+                />
+                <ContextSourceBadge label={t('writer.copilot.source_chapter_plan')} count={activeChapterPlan ? 1 : 0} />
+                <ContextSourceBadge label={t('writer.copilot.source_story_arcs')} count={project.outline.arcs.length} />
+                <ContextSourceBadge
+                  label={t('writer.copilot.source_characters')}
+                  count={project.storyBible.characters.length}
+                />
+                <ContextSourceBadge label={t('writer.copilot.source_lorebook')} count={activeLoreEntries.length} />
+                <ContextSourceBadge label={t('writer.copilot.source_foreshadowing')} count={openForeshadowingCount} />
+              </div>
+            </>
+          )}
+          <Button
+            data-ui="writer.context.preview"
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full"
+            loading={previewing}
+            disabled={!jobTerminal}
+            onClick={() => void previewContext()}>
+            <Eye className="size-3.5" aria-hidden />
+            {contextPreview ? t('writer.context.refresh_preview') : t('writer.context.preview')}
+          </Button>
         </section>
 
         <p className="rounded-md border border-border bg-background-subtle px-2.5 py-2 text-muted-foreground text-xs leading-5">
@@ -392,38 +477,7 @@ export function WriterCopilot({
               </div>
             ) : null}
 
-            <div className="space-y-1.5">
-              <h4 className="font-medium text-muted-foreground text-xs">{t('writer.copilot.actual_context')}</h4>
-              <div className="flex flex-wrap gap-1">
-                {proposal.contextPacket.sources.map((source, index) => (
-                  <Badge key={`${source.kind}-${source.label}-${index}`} variant="outline" className="max-w-full">
-                    <span className="truncate">{source.label}</span>
-                    {source.truncated ? <span>{t('writer.copilot.truncated')}</span> : null}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-
-            {proposal.contextPacket.loreActivations?.length ? (
-              <div className="space-y-1.5">
-                <h4 className="font-medium text-muted-foreground text-xs">{t('writer.copilot.lore_receipts')}</h4>
-                <div className="flex flex-wrap gap-1">
-                  {proposal.contextPacket.loreActivations.map((receipt) => (
-                    <Badge key={receipt.entryId} variant="outline" className="max-w-full gap-1">
-                      <span className="truncate">{receipt.title}</span>
-                      <span>
-                        {t(
-                          receipt.status === 'included'
-                            ? 'writer.copilot.lore_status.included'
-                            : 'writer.copilot.lore_status.dropped'
-                        )}
-                      </span>
-                      {receipt.truncated ? <span>{t('writer.copilot.truncated')}</span> : null}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            ) : null}
+            <WriterContextInspector packet={proposal.contextPacket} title={t('writer.copilot.actual_context')} />
 
             {proposal.status === 'pending' && (proposalCanReplace || proposalCanAppend) ? (
               <div className={`grid gap-2 ${proposalCanReplace && proposalCanAppend ? 'grid-cols-2' : 'grid-cols-1'}`}>
