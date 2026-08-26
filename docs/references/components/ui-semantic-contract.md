@@ -155,9 +155,11 @@ The maintained feature surfaces currently include:
 The Writer feature declares these explicit boundaries:
 
 - `writer.view` and `writer.welcome` for the workspace and empty-project entry;
-- `writer.documents.dialog` for the structured project JSON editor;
+- `writer.documents.dialog` for Story Studio and its advanced project JSON editor;
+- `writer.story-studio.story-bible` for the visual story-bible form;
 - `writer.lorebook.dialog` for deterministic story-knowledge activation and editing;
 - `writer.proposals.list` for the portable proposal library;
+- `writer.context.inspector` for the exact context packet shown before and after generation;
 - `writer.history.dialog` for chapter history inspection and restore;
 - `writer.continuity-review.dialog`, `writer.continuity-review.findings`, and
   `writer.continuity-review.finding` for the continuity review and its findings;
@@ -166,7 +168,9 @@ The Writer feature declares these explicit boundaries:
 
 The Writer feature declares these explicit actions:
 
-- `writer.memory.manage` and `writer.documents.save`;
+- `writer.memory.manage`, `writer.documents.save`, and `writer.story-studio.mode`;
+- `writer.workspace.toggle-chapters`, `writer.workspace.toggle-focus`, and `writer.workspace.toggle-copilot`;
+- `writer.context.preview` for compiling the exact pre-generation context without calling a model;
 - `writer.lorebook.open`, `writer.lorebook.add`, and `writer.lorebook.save`;
 - `writer.proposals.load`;
 - `writer.history.open`, `writer.history.read`, and `writer.history.restore`;
