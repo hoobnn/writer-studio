@@ -1,7 +1,26 @@
-import { Button, ResizableHandle, ResizablePanel, ResizablePanelGroup, Spinner } from '@cherrystudio/ui'
+import {
+  Button,
+  NormalTooltip,
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+  Spinner,
+  useResizablePanelRef
+} from '@cherrystudio/ui'
 import type { WriterRecoveryDraft } from '@shared/data/cache/cacheValueTypes'
 import type { WriterChapterDocument, WriterProject, WriterProposalMode } from '@shared/types/writer'
-import { FilePlus2, FolderOpen, Plus, X } from 'lucide-react'
+import {
+  FilePlus2,
+  Focus,
+  FolderOpen,
+  Minimize2,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
+  Plus,
+  X
+} from 'lucide-react'
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -69,8 +88,14 @@ export function WriterWorkspace({
   const [lorebookDialogOpen, setLorebookDialogOpen] = useState(false)
   const [continuityReviewDialogOpen, setContinuityReviewDialogOpen] = useState(false)
   const [historyDocument, setHistoryDocument] = useState<WriterChapterDocument>()
+  const [chaptersVisible, setChaptersVisible] = useState(true)
+  const [copilotVisible, setCopilotVisible] = useState(true)
+  const [focusMode, setFocusMode] = useState(false)
   const draftChapterIdRef = useRef(chapterDocument?.chapter.id)
   const historyOpenRequestIdRef = useRef(0)
+  const chaptersPanelRef = useResizablePanelRef()
+  const copilotPanelRef = useResizablePanelRef()
+  const layoutBeforeFocusRef = useRef({ chaptersVisible: true, copilotVisible: true })
   const orderedChapters = [...project.manifest.chapters].sort((a, b) => a.order - b.order)
 
   useEffect(() => {
@@ -144,6 +169,35 @@ export function WriterWorkspace({
     },
     [onDocumentSaved, onRecoveryDraftChange, project.rootPath]
   )
+  const setChaptersPanelVisible = useCallback(
+    (visible: boolean) => {
+      if (visible) chaptersPanelRef.current?.expand()
+      else chaptersPanelRef.current?.collapse()
+      setChaptersVisible(visible)
+    },
+    [chaptersPanelRef]
+  )
+  const setCopilotPanelVisible = useCallback(
+    (visible: boolean) => {
+      if (visible) copilotPanelRef.current?.expand()
+      else copilotPanelRef.current?.collapse()
+      setCopilotVisible(visible)
+    },
+    [copilotPanelRef]
+  )
+  const toggleFocusMode = useCallback(() => {
+    setFocusMode((current) => {
+      if (current) {
+        setChaptersPanelVisible(layoutBeforeFocusRef.current.chaptersVisible)
+        setCopilotPanelVisible(layoutBeforeFocusRef.current.copilotVisible)
+      } else {
+        layoutBeforeFocusRef.current = { chaptersVisible, copilotVisible }
+        setChaptersPanelVisible(false)
+        setCopilotPanelVisible(false)
+      }
+      return !current
+    })
+  }, [chaptersVisible, copilotVisible, setChaptersPanelVisible, setCopilotPanelVisible])
 
   return (
     <main data-ui="writer.view" className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
@@ -154,21 +208,85 @@ export function WriterWorkspace({
             {t('writer.workspace.project_path')}: {project.rootPath}
           </p>
         </div>
-        <Button
-          type="button"
-          size="icon-sm"
-          variant="ghost"
-          aria-label={t('writer.workspace.close_project')}
-          disabled={editorLocked}
-          onClick={() => void closeProject()}>
-          <X className="size-4" aria-hidden />
-        </Button>
+        <div className="flex shrink-0 items-center gap-0.5">
+          <NormalTooltip
+            content={t(chaptersVisible ? 'writer.workspace.hide_chapters' : 'writer.workspace.show_chapters')}
+            side="bottom">
+            <Button
+              data-ui="writer.workspace.toggle-chapters"
+              type="button"
+              size="icon-sm"
+              variant="ghost"
+              aria-label={t(chaptersVisible ? 'writer.workspace.hide_chapters' : 'writer.workspace.show_chapters')}
+              aria-pressed={chaptersVisible}
+              disabled={focusMode}
+              onClick={() => setChaptersPanelVisible(!chaptersVisible)}>
+              {chaptersVisible ? (
+                <PanelLeftClose className="size-4" aria-hidden />
+              ) : (
+                <PanelLeftOpen className="size-4" aria-hidden />
+              )}
+            </Button>
+          </NormalTooltip>
+          <NormalTooltip
+            content={t(focusMode ? 'writer.workspace.exit_focus' : 'writer.workspace.enter_focus')}
+            side="bottom">
+            <Button
+              data-ui="writer.workspace.toggle-focus"
+              type="button"
+              size="icon-sm"
+              variant={focusMode ? 'secondary' : 'ghost'}
+              aria-label={t(focusMode ? 'writer.workspace.exit_focus' : 'writer.workspace.enter_focus')}
+              aria-pressed={focusMode}
+              onClick={toggleFocusMode}>
+              {focusMode ? <Minimize2 className="size-4" aria-hidden /> : <Focus className="size-4" aria-hidden />}
+            </Button>
+          </NormalTooltip>
+          <NormalTooltip
+            content={t(copilotVisible ? 'writer.workspace.hide_copilot' : 'writer.workspace.show_copilot')}
+            side="bottom">
+            <Button
+              data-ui="writer.workspace.toggle-copilot"
+              type="button"
+              size="icon-sm"
+              variant="ghost"
+              aria-label={t(copilotVisible ? 'writer.workspace.hide_copilot' : 'writer.workspace.show_copilot')}
+              aria-pressed={copilotVisible}
+              disabled={focusMode}
+              onClick={() => setCopilotPanelVisible(!copilotVisible)}>
+              {copilotVisible ? (
+                <PanelRightClose className="size-4" aria-hidden />
+              ) : (
+                <PanelRightOpen className="size-4" aria-hidden />
+              )}
+            </Button>
+          </NormalTooltip>
+          <NormalTooltip content={t('writer.workspace.close_project')} side="bottom">
+            <Button
+              type="button"
+              size="icon-sm"
+              variant="ghost"
+              aria-label={t('writer.workspace.close_project')}
+              disabled={editorLocked}
+              onClick={() => void closeProject()}>
+              <X className="size-4" aria-hidden />
+            </Button>
+          </NormalTooltip>
+        </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-auto">
-        <ResizablePanelGroup direction="horizontal" className="min-h-[520px] min-w-[900px]">
-          <ResizablePanel id="writer-chapters" defaultSize={22} minSize={16}>
+      <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
+        <ResizablePanelGroup direction="horizontal" className="h-full min-h-0 min-w-0">
+          <ResizablePanel
+            id="writer-chapters"
+            defaultSize={22}
+            minSize={16}
+            collapsedSize={0}
+            collapsible
+            panelRef={chaptersPanelRef}>
             <aside
+              aria-hidden={!chaptersVisible}
+              inert={!chaptersVisible}
               className="flex h-full min-h-0 flex-col bg-background-subtle"
               aria-labelledby="writer-chapters-heading">
               <div className="flex min-h-12 shrink-0 items-center justify-between gap-2 border-border border-b px-3">
@@ -198,10 +316,10 @@ export function WriterWorkspace({
                             aria-current={active ? 'page' : undefined}
                             disabled={chapterLoading || editorLocked}
                             onClick={() => void selectChapter(chapter.id)}
-                            className={`flex w-full min-w-0 items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm transition-colors ${
+                            className={`flex w-full min-w-0 items-center gap-2 rounded-md border px-2.5 py-2 text-left text-sm transition-colors ${
                               active
-                                ? 'bg-primary text-primary-foreground'
-                                : 'text-foreground hover:bg-accent hover:text-accent-foreground'
+                                ? 'border-border bg-accent font-medium text-accent-foreground'
+                                : 'border-transparent text-foreground hover:bg-accent hover:text-accent-foreground'
                             }`}>
                             <span className="w-6 shrink-0 text-right text-xs tabular-nums opacity-60">
                               {chapter.order + 1}
@@ -232,8 +350,7 @@ export function WriterWorkspace({
               />
             </aside>
           </ResizablePanel>
-
-          <ResizableHandle withHandle />
+          {chaptersVisible ? <ResizableHandle withHandle /> : null}
 
           <ResizablePanel id="writer-manuscript" defaultSize={50} minSize={32}>
             {chapterLoading ? (
@@ -276,23 +393,30 @@ export function WriterWorkspace({
             )}
           </ResizablePanel>
 
-          <ResizableHandle withHandle />
-
-          <ResizablePanel id="writer-copilot" defaultSize={28} minSize={22}>
-            <WriterCopilot
-              key={chapterDocument?.chapter.id ?? 'writer-no-chapter'}
-              project={project}
-              chapterId={chapterDocument?.chapter.id}
-              currentContent={draftContent}
-              initialActiveJobId={activeJobId}
-              onBeforeGeneration={beforeGeneration}
-              onApplyProposal={applyProposal}
-              onApplyingChange={setEditorLocked}
-              onActiveJobIdChange={(jobId) => {
-                if (!chapterDocument) return
-                onActiveJobIdChange(project.rootPath, chapterDocument.chapter.id, jobId)
-              }}
-            />
+          {copilotVisible ? <ResizableHandle withHandle /> : null}
+          <ResizablePanel
+            id="writer-copilot"
+            defaultSize={28}
+            minSize={22}
+            collapsedSize={0}
+            collapsible
+            panelRef={copilotPanelRef}>
+            <div aria-hidden={!copilotVisible} inert={!copilotVisible} className="h-full min-h-0">
+              <WriterCopilot
+                key={chapterDocument?.chapter.id ?? 'writer-no-chapter'}
+                project={project}
+                chapterId={chapterDocument?.chapter.id}
+                currentContent={draftContent}
+                initialActiveJobId={activeJobId}
+                onBeforeGeneration={beforeGeneration}
+                onApplyProposal={applyProposal}
+                onApplyingChange={setEditorLocked}
+                onActiveJobIdChange={(jobId) => {
+                  if (!chapterDocument) return
+                  onActiveJobIdChange(project.rootPath, chapterDocument.chapter.id, jobId)
+                }}
+              />
+            </div>
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>

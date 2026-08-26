@@ -30,10 +30,8 @@ export function WriterMemorySummary({
     project.continuity.chapterSummaries.length +
     (project.continuity.timelineEvents?.length ?? 0) +
     (project.continuity.characterStates?.length ?? 0)
-  const openForeshadowing = project.continuity.foreshadowing.filter((item) => item.status === 'open')
-
   return (
-    <section className="space-y-3 border-border border-t p-3" aria-labelledby="writer-memory-heading">
+    <section className="shrink-0 space-y-2 border-border border-t p-2.5" aria-labelledby="writer-memory-heading">
       <div className="flex items-center justify-between gap-2">
         <h2 id="writer-memory-heading" className="font-medium text-xs uppercase tracking-wide">
           {t('writer.memory.title')}
@@ -66,24 +64,12 @@ export function WriterMemorySummary({
         />
       </div>
 
-      <MemoryList
-        title={t('writer.memory.hard_rules')}
-        emptyLabel={t('writer.memory.no_hard_rules')}
-        items={project.storyBible.hardRules.slice(0, 3)}
-        remaining={Math.max(0, project.storyBible.hardRules.length - 3)}
-      />
-      <MemoryList
-        title={t('writer.memory.open_foreshadowing')}
-        emptyLabel={t('writer.memory.no_open_foreshadowing')}
-        items={openForeshadowing.slice(0, 3).map((item) => item.description)}
-        remaining={Math.max(0, openForeshadowing.length - 3)}
-      />
       <Button
         data-ui="writer.continuity-review.open"
         type="button"
-        variant="outline"
+        variant="ghost"
         size="sm"
-        className="w-full"
+        className="w-full justify-start"
         disabled={project.manifest.chapters.length === 0}
         onClick={onReviewContinuity}>
         <ShieldCheck className="size-3.5" aria-hidden />
@@ -92,9 +78,9 @@ export function WriterMemorySummary({
       <Button
         data-ui="writer.lorebook.open"
         type="button"
-        variant="outline"
+        variant="ghost"
         size="sm"
-        className="w-full"
+        className="w-full justify-start"
         onClick={onManageLorebook}>
         <BookOpenText className="size-3.5" aria-hidden />
         {t('writer.memory.manage_lorebook')}
@@ -102,9 +88,9 @@ export function WriterMemorySummary({
       <Button
         data-ui="writer.memory.manage"
         type="button"
-        variant="outline"
+        variant="ghost"
         size="sm"
-        className="w-full"
+        className="w-full justify-start"
         onClick={onManageDocuments}>
         <Braces className="size-3.5" aria-hidden />
         {t('writer.memory.manage_documents')}
@@ -115,48 +101,14 @@ export function WriterMemorySummary({
 
 function MemoryCount({ icon, label, count }: { icon: React.ReactNode; label: string; count: number }) {
   return (
-    <div className="min-w-0 rounded-md border border-border bg-background px-2 py-2">
-      <div className="flex items-center gap-1 text-muted-foreground">
-        {icon}
-        <span className="truncate text-[10px]">{label}</span>
+    <div className="flex min-w-0 items-center gap-2 rounded-md bg-background px-2 py-1.5">
+      <div className="shrink-0 text-muted-foreground">{icon}</div>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-[10px] text-muted-foreground" title={label}>
+          {label}
+        </div>
+        <div className="font-semibold text-sm tabular-nums">{count}</div>
       </div>
-      <div className="mt-1 font-semibold text-base tabular-nums">{count}</div>
-    </div>
-  )
-}
-
-function MemoryList({
-  title,
-  emptyLabel,
-  items,
-  remaining
-}: {
-  title: string
-  emptyLabel: string
-  items: string[]
-  remaining: number
-}) {
-  const { t } = useTranslation()
-
-  return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="font-medium text-muted-foreground text-xs">{title}</h3>
-        {remaining > 0 ? (
-          <span className="text-[10px] text-muted-foreground">{t('writer.memory.more', { count: remaining })}</span>
-        ) : null}
-      </div>
-      {items.length ? (
-        <ul className="space-y-1">
-          {items.map((item) => (
-            <li key={item} className="line-clamp-2 rounded bg-background-subtle px-2 py-1.5 text-xs leading-5">
-              {item}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="rounded bg-background-subtle px-2 py-1.5 text-muted-foreground text-xs">{emptyLabel}</p>
-      )}
     </div>
   )
 }
