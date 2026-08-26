@@ -20,14 +20,14 @@ sources:
 
 | 项 | 现场值 |
 |---|---|
-| Cherry 基线 | 31750284d6854ced897417d342305985a445f5c1 |
-| 基线提交 | fix(chat-shell) keep sidebar resize handle aligned after settings navigation (#19123) |
-| 开发分支 | feat/writer-studio |
-| 本地 main | 31750284d6854ced897417d342305985a445f5c1 |
-| origin/main | 31750284d6854ced897417d342305985a445f5c1 |
-| 初始分叉计数 | origin/main 与 feat/writer-studio 为 0 / 0 |
+| Cherry 基线 | 9447bf2e5ea76867d6555f08978762892c7cb0c1 |
+| 基线提交 | fix(chat-messages): always show token usage in the message footer (#19416) |
+| 开发分支 | product/writer |
+| 本地 main | 只做上游镜像，不放本地提交 |
+| origin/main | 9447bf2e5ea76867d6555f08978762892c7cb0c1 |
+| 分叉计数 | 见 `git rev-list --count --left-right origin/main...product/writer` |
 | 当前 remote | origin 同时 fetch 和 push 到 https://github.com/CherryHQ/cherry-studio.git |
-| feat 跟踪分支 | 未设置 |
+| 跟踪分支 | 未设置（尚未推送）|
 
 本次只读取 remote，没有执行 remote add、set-url、rename 或 fetch。
 
@@ -53,8 +53,8 @@ upstream  https://github.com/CherryHQ/cherry-studio.git
 | 分支 | 责任 |
 |---|---|
 | main | 只快进跟随 upstream/main，不放 Writer 提交 |
-| feat/writer-studio | Writer 的集成分支，基于 main |
-| feat/writer-* | 可选的短生命周期子分支，分别承载 domain、main、renderer 或测试 |
+| product/writer | Writer 的集成分支，基于 main |
+| product/writer-* | 可选的短生命周期子分支，分别承载 domain、main、renderer 或测试 |
 
 一份典型的一次性 remote 调整命令如下，只作为建议。本轮没有执行。
 
@@ -67,7 +67,7 @@ git branch --set-upstream-to=upstream/main main
 
 如果暂时不使用个人 fork，可以保留当前 origin 为官方 remote，再增加 fork remote。关键点是名称和职责固定，脚本与文档不要把同一个 remote 同时当官方上游和个人推送目标。
 
-feat/writer-studio 只有本地使用且尚未共享时，优先 rebase 到最新 main。分支已经由多人共享或存在公开 PR 时，使用 merge 并保留公开历史，不能强推覆盖他人工作。
+product/writer 是长期产品线，固定使用 merge 同步上游，不用 rebase。rebase 会在每次同步时重放全部本地提交，同一处冲突要反复解决；merge 只需解决一次，且 `git rerere` 能记住解法。短生命周期的 product/writer-* 子分支在未共享前可以 rebase 到 product/writer。
 
 ## Writer 自有边界
 
@@ -82,10 +82,17 @@ src/main/features/writer/
 src/main/ipc/handlers/writer.ts
 src/renderer/features/writer/
 src/renderer/routes/app/writer.tsx
+src/renderer/i18n/locales/writer/
 docs/writer/
 ```
 
 主进程领域目录内包含 WriterStudioService、WriterProjectRepository、writerContext、writerProjectContext、writerPrompts、writerModelPolicy、writerGenerationJobHandler、writerContinuityReview 和 writerErrors。`writerProjectContext.ts` 是 preview 与 generation 共用的项目装载边界，`writerContext.ts` 保持纯 compiler；`writerContinuityReview.ts` 是不调用模型的 typed 检查器，portable report、coverage 与 waiver 仍由 Repository 保存。纯函数 `src/shared/utils/writerLore.ts` 由 main 与 renderer 共用，负责 lore 扫描文本、普通 key 匹配和稳定排序。renderer 通过 feature barrel 暴露 WriterPage，route 文件不应穿透到内部组件。Story Studio、Lorebook、Context Inspector 与 Continuity Review Dialog 留在 renderer feature 内，不能升到中央页面或通用 store。
+
+## 降低冲突面的两条约定
+
+**writer 翻译独立成包。** writer 的 key 全部放在 `src/renderer/i18n/locales/writer/*.json`，共享 catalog `locales/*.json` 与上游保持逐字节一致。resolver 加载语言包时合并两份 pack，仍是同一个扁平 namespace，调用点无需区分。`i18n-check`、`i18n-check-values`、`i18n-sync` 与 `i18n-check-unused` 均已识别该子目录，翻译仍受完整校验；`i18next.config.ts` 则排除 writer feature，避免 extract 把新 key 写回共享 catalog。新增 writer key 需手动写入 `locales/writer/en-us.json` 再运行 `pnpm i18n:sync`。
+
+**改上游文件时不要整体缩进。** 用 `{cond && (<>...)}` 包住一段上游 JSX 会让它整体右移一级，产生大量无语义的缩进差异，上游每次改动该处都必然冲突。正确做法是把这段整体移到自有文件（如 `VendorAboutRows.tsx`、`VendorLoginButton.tsx`），上游文件里只留一处调用。判据是 `git diff -w` 与 `git diff` 结果应当一致；不一致就说明存在缩进噪音。
 
 ## 中央薄接入点
 
@@ -186,8 +193,8 @@ git diff --check
 记录下面三项，便于同步后做 range-diff。
 
 ```bash
-git merge-base feat/writer-studio upstream/main
-git rev-parse feat/writer-studio
+git merge-base product/writer upstream/main
+git rev-parse product/writer
 git rev-parse upstream/main
 ```
 
@@ -208,14 +215,14 @@ main 无法 fast-forward 表示它混入了本地提交。先审计提交来源�
 本地未共享分支使用下面流程。
 
 ```bash
-git switch feat/writer-studio
+git switch product/writer
 git rebase main
 ```
 
 共享分支改用正常 merge。
 
 ```bash
-git switch feat/writer-studio
+git switch product/writer
 git merge main
 ```
 
@@ -235,17 +242,17 @@ generated 文件不做 ours 或 theirs 长期保留。选择真实源文件后�
 rebase 后使用同步前记录的 old base、old tip 和新 main 运行 range-diff。确认 Writer commit 的意图仍然存在，没有把上游修复意外带走。
 
 ```bash
-git range-diff <old-base>..<old-tip> main..feat/writer-studio
-git diff --stat main...feat/writer-studio
+git range-diff <old-base>..<old-tip> main..product/writer
+git diff --stat main...product/writer
 git diff --check
 ```
 
 再检查热点范围。
 
 ```bash
-git diff --name-only main...feat/writer-studio
-git diff main...feat/writer-studio -- src/main/core src/main/data packages/aiCore src/preload
-git diff main...feat/writer-studio -- migrations/sqlite-drizzle src/renderer/routeTree.gen.ts
+git diff --name-only main...product/writer
+git diff main...product/writer -- src/main/core src/main/data packages/aiCore src/preload
+git diff main...product/writer -- migrations/sqlite-drizzle src/renderer/routeTree.gen.ts
 ```
 
 第一条用于完整枚举，后两条要能解释每个 diff。首版 migrations 应为空，core diff 应只剩 serviceRegistry 的注册。
