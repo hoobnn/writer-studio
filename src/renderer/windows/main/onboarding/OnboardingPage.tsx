@@ -28,11 +28,12 @@ import { LATEST_PRIVACY_POLICY_VERSION } from '@shared/utils/constants'
 import { DISTRIBUTION } from '@shared/utils/distribution'
 import { defaultLanguage } from '@shared/utils/languages'
 import { createMemoryHistory, createRootRoute, createRouter, RouterProvider } from '@tanstack/react-router'
-import { ArrowLeft, Check, KeyRound, Languages, LogIn } from 'lucide-react'
+import { ArrowLeft, Check, KeyRound, Languages } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { PrivacyPolicyDialog } from '../privacy/PrivacyPolicyDialog'
+import { VendorLoginButton } from './VendorLoginButton'
 
 type OnboardingStep = 'welcome' | 'provider' | 'select-model'
 type OnboardingCompletionStatus = Exclude<OnboardingProviderSetupStatus, 'pending'>
@@ -337,18 +338,11 @@ export default function OnboardingPage() {
                     <p className="m-0 text-muted-foreground text-sm">{t('onboarding.welcome.subtitle')}</p>
                   </div>
                   <div className="mt-8 flex w-full flex-col gap-3">
-                    {DISTRIBUTION.vendorOAuthEnabled && (
-                      <Button
-                        type="button"
-                        size="lg"
-                        className="h-11 w-full rounded-xl"
-                        loading={isLoggingIn}
-                        disabled={isUpdatingPrivacy}
-                        onClick={() => void runAfterPrivacyChoice(handleCherryInLogin)}>
-                        {!isLoggingIn && <LogIn size={16} />}
-                        {t('onboarding.welcome.login_cherryin')}
-                      </Button>
-                    )}
+                    <VendorLoginButton
+                      loading={isLoggingIn}
+                      disabled={isUpdatingPrivacy}
+                      onClick={() => void runAfterPrivacyChoice(handleCherryInLogin)}
+                    />
                     <Button
                       type="button"
                       variant={DISTRIBUTION.vendorOAuthEnabled ? 'outline' : 'default'}
