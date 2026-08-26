@@ -22,7 +22,7 @@
     }
   },
   "files": {
-    "ignoreUnknown": false,
+    "ignoreUnknown": true,
     "includes": [
       "**",
       "!**/.claude/**",
@@ -31,7 +31,13 @@
       "!v2-refactor-temp/**",
       "!resources/**",
       "!**/storybook-static/**",
-      "!**/dist/**"
+      "!**/dist/**",
+      "!**/out/**",
+      "!**/build/**",
+      "!**/coverage/**",
+      "!**/test-results/**",
+      "!**/playwright-report/**",
+      "!**/.playwright-artifacts-*/**"
     ],
     "maxSize": 2097152
   },
@@ -115,5 +121,5 @@
       "suspicious": "off"
     }
   },
-  "vcs": { "clientKind": "git", "enabled": false, "useIgnoreFile": false }
+  "vcs": { "clientKind": "git", "enabled": true, "useIgnoreFile": true }
 }
