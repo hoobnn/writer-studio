@@ -69,7 +69,16 @@ export function WorkshopWorkspace({ snapshot, onRefreshSnapshot, onClose }: Work
 
   const refreshAll = useCallback(async () => {
     await Promise.all([onRefreshSnapshot(), loadSideData()])
-  }, [loadSideData, onRefreshSnapshot])
+    if (selection?.type !== 'chapter') return
+    try {
+      const { content } = await ipcApi.request('workshop.chapter.read', { rootPath, chapterId: selection.id })
+      setChapterContent(content)
+      setChapterBaseline(content)
+    } catch {
+      // 回滚可能删除了当前章节;回到未选中状态。
+      setSelection(undefined)
+    }
+  }, [loadSideData, onRefreshSnapshot, rootPath, selection])
 
   const runAction = useCallback(
     async (errorKey: string, action: () => Promise<void>) => {
