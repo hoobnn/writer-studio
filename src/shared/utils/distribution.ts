@@ -4,7 +4,7 @@ export const DISTRIBUTION = Object.freeze({
   appName: 'WriterStudio',
   productName: 'Writer Studio',
   protocol: 'writerstudio',
-  updatesEnabled: false,
+  updatesEnabled: true,
   upstreamServicesEnabled: false,
   vendorOAuthEnabled: false,
   version: '0.1.0'

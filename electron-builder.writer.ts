@@ -25,8 +25,18 @@ const config = {
     version: DISTRIBUTION.version,
     upstreamVersion
   },
+  // 覆盖上游 releaseInfo，否则 latest-mac.yml 会带上 Cherry Studio 的 release notes；
+  // 每次发版在这里更新下游自己的更新说明
+  releaseInfo: {
+    releaseNotes: `Writer Studio ${DISTRIBUTION.version} 首个发布版本。`
+  },
   forceCodeSigning: true,
-  publish: null,
+  // github provider 会与上游 generic publish 的 url 键合并导致 schema 校验失败，
+  // 因此用 generic 指向 GitHub Releases 的 latest/download 稳定入口
+  publish: {
+    provider: 'generic',
+    url: 'https://github.com/hoobnn/writer-studio/releases/latest/download'
+  },
   afterSign: null,
   mac: {
     bundleShortVersion: DISTRIBUTION.version,

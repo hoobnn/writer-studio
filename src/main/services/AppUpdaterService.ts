@@ -88,7 +88,10 @@ export class AppUpdaterService extends BaseService {
   // Consecutive scheduled-check failures, drives backoff; reset on success.
   private updateCheckFailures = 0
 
-  constructor(private readonly updatesEnabled: boolean = DISTRIBUTION.updatesEnabled) {
+  constructor(
+    private readonly updatesEnabled: boolean = DISTRIBUTION.updatesEnabled,
+    private readonly upstreamServicesEnabled: boolean = DISTRIBUTION.upstreamServicesEnabled
+  ) {
     super()
   }
 
@@ -216,6 +219,9 @@ export class AppUpdaterService extends BaseService {
   }
 
   private async fetchReleaseHistory(): Promise<ReleaseNotesEntry[] | null> {
+    // RELEASE_HISTORY_URL 是 Cherry 官方服务，下游发行版不请求
+    if (!this.upstreamServicesEnabled) return null
+
     try {
       const { updateHeaders } = await this.getUpdateRequest()
       const response = await net.fetch(RELEASE_HISTORY_URL, {

@@ -138,15 +138,29 @@ describe('AppUpdaterService', () => {
     autoUpdater.channel = ''
     autoUpdater.allowDowngrade = false
     autoUpdater.disableDifferentialDownload = false
-    appUpdater = new AppUpdaterService(true)
+    // 上游服务开关一并打开，让 managed update feed 分支可测
+    appUpdater = new AppUpdaterService(true, true)
   })
 
-  it('keeps Writer Studio disconnected from the upstream update service', async () => {
-    const writerUpdater = new AppUpdaterService()
+  it('disables every update entry point when updates are turned off', async () => {
+    const disabledUpdater = new AppUpdaterService(false)
 
-    await expect(writerUpdater.checkForUpdates()).resolves.toEqual({ currentVersion: '1.0.0', updateInfo: null })
-    await expect(writerUpdater.getReleaseHistory()).resolves.toBeNull()
+    await expect(disabledUpdater.checkForUpdates()).resolves.toEqual({ currentVersion: '1.0.0', updateInfo: null })
+    await expect(disabledUpdater.getReleaseHistory()).resolves.toBeNull()
     expect(autoUpdater.checkForUpdates).not.toHaveBeenCalled()
+    expect(net.fetch).not.toHaveBeenCalled()
+  })
+
+  it('keeps Writer Studio disconnected from the upstream release-history service', async () => {
+    const writerUpdater = new AppUpdaterService()
+    releaseNotesCheckMock.mockResolvedValue({
+      isUpdateAvailable: true,
+      updateInfo: { releaseNotes: 'Writer notes', version: '1.1.0' }
+    })
+
+    await expect(writerUpdater.getReleaseHistory()).resolves.toEqual([
+      { releaseNotes: 'Writer notes', version: '1.1.0' }
+    ])
     expect(net.fetch).not.toHaveBeenCalled()
   })
 
