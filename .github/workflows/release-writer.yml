@@ -1,0 +1,106 @@
+name: Release Writer Studio
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v0.1.0)"
+        required: true
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release-mac-arm64:
+    if: github.repository == 'hoobnn/writer-studio'
+    runs-on: macos-latest
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v6
+
+      - name: Get release tag
+        id: get-tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Verify tag matches DISTRIBUTION.version
+        run: |
+          TAG="${{ steps.get-tag.outputs.tag }}"
+          VERSION=$(sed -n "s/.*version: '\(.*\)'.*/\1/p" src/shared/utils/distribution.ts)
+          if [ "$TAG" != "v$VERSION" ]; then
+            echo "Tag $TAG does not match DISTRIBUTION.version $VERSION" >&2
+            exit 1
+          fi
+
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: ".node-version"
+
+      - name: macOS dependencies fix
+        run: brew install python-setuptools
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+
+      - name: Cache pnpm dependencies
+        uses: actions/cache@v5
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Build Mac (arm64)
+        run: pnpm build:writer:mac:arm64
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          CSC_NAME: ${{ secrets.CSC_NAME }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          NODE_OPTIONS: --max-old-space-size=8192
+
+      - name: Verify artifacts
+        run: |
+          APP="dist/writer-studio/mac-arm64/Writer Studio.app"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          spctl --assess --type execute -vv "$APP"
+          xcrun stapler validate "$APP"
+
+          grep -q "url: Writer-Studio-.*\.zip" dist/writer-studio/latest-mac.yml || {
+            echo "latest-mac.yml is missing the zip entry" >&2
+            cat dist/writer-studio/latest-mac.yml >&2
+            exit 1
+          }
+          grep -q "url: https://github.com/hoobnn/writer-studio/releases/latest/download" "$APP/Contents/Resources/app-update.yml" || {
+            echo "app-update.yml does not point to hoobnn/writer-studio" >&2
+            cat "$APP/Contents/Resources/app-update.yml" >&2
+            exit 1
+          }
+
+      - name: Create draft release
+        uses: ncipollo/release-action@v1
+        with:
+          draft: true
+          allowUpdates: true
+          makeLatest: false
+          tag: ${{ steps.get-tag.outputs.tag }}
+          artifacts: "dist/writer-studio/*.dmg,dist/writer-studio/*.zip,dist/writer-studio/*.blockmap,dist/writer-studio/latest-mac.yml"
+          token: ${{ secrets.GITHUB_TOKEN }}
