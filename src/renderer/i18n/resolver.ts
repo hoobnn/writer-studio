@@ -39,6 +39,30 @@ const localeLoaders = {
   'vi-VN': () => import('./locales/vi-vn.json')
 } satisfies Record<LanguageVarious, () => Promise<unknown>>
 
+// Writer keys live in their own pack so the shared catalogs stay byte-identical
+// to upstream and never collide on sync. Merged into the same flat namespace.
+const writerLocaleLoaders = {
+  'en-US': () => import('./locales/writer/en-us.json'),
+  'zh-CN': () => import('./locales/writer/zh-cn.json'),
+  'zh-TW': () => import('./locales/writer/zh-tw.json'),
+  'de-DE': () => import('./locales/writer/de-de.json'),
+  'el-GR': () => import('./locales/writer/el-gr.json'),
+  'es-ES': () => import('./locales/writer/es-es.json'),
+  'fr-FR': () => import('./locales/writer/fr-fr.json'),
+  'ja-JP': () => import('./locales/writer/ja-jp.json'),
+  'pt-PT': () => import('./locales/writer/pt-pt.json'),
+  'ro-RO': () => import('./locales/writer/ro-ro.json'),
+  'ru-RU': () => import('./locales/writer/ru-ru.json'),
+  'vi-VN': () => import('./locales/writer/vi-vn.json')
+} satisfies Record<LanguageVarious, () => Promise<unknown>>
+
+const loadLocalePack = async (language: LanguageVarious) => {
+  const base = localeLoaders[language]
+  if (!base) throw new Error(`No locale pack for "${language}"`)
+  const [shared, writer] = await Promise.all([base(), writerLocaleLoaders[language]()])
+  return { ...shared.default, ...writer.default }
+}
+
 export const getLanguage = async () => {
   return (await preferenceService.get('app.language')) || navigator.language || defaultLanguage
 }
@@ -76,12 +100,7 @@ const doInit = async (): Promise<void> => {
   const lng = await getLanguage().catch(() => defaultLanguage)
 
   await i18n
-    .use(
-      resourcesToBackend((language: string) => {
-        const loader = localeLoaders[language as LanguageVarious]
-        return loader ? loader() : Promise.reject(new Error(`No locale pack for "${language}"`))
-      })
-    )
+    .use(resourcesToBackend((language: string) => loadLocalePack(language as LanguageVarious)))
     .use(initReactI18next)
     .init({
       lng,

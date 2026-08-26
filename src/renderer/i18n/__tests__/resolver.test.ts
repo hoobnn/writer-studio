@@ -34,6 +34,14 @@ describe('renderer i18n lazy init', () => {
     expect(i18n.t('common.copy')).toBe('Copy')
   })
 
+  it('merges the separate writer pack into the shared namespace', async () => {
+    await i18n.changeLanguage('en-US')
+    expect(i18n.t('writer.title')).toBe('Writer')
+
+    await i18n.changeLanguage('zh-CN')
+    expect(i18n.t('writer.title')).not.toBe('writer.title')
+  })
+
   it('uses singular and plural diagnostic file summaries in English', async () => {
     await i18n.changeLanguage('en-US')
 

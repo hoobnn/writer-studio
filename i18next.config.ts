@@ -4,7 +4,12 @@ export default defineConfig({
   locales: ['en-us', 'zh-cn'],
   extract: {
     input: ['src/renderer/**/*.{tsx,ts}'],
-    ignore: ['src/renderer/**/__tests__/*.{tsx,ts}', 'src/renderer/**/*.test.{tsx,ts}'],
+    ignore: [
+      'src/renderer/**/__tests__/*.{tsx,ts}',
+      'src/renderer/**/*.test.{tsx,ts}',
+      // Writer keys are maintained in locales/writer/, not the shared catalog.
+      'src/renderer/features/writer/**/*.{tsx,ts}'
+    ],
     output: 'src/renderer/i18n/locales/{{language}}.json',
     defaultNS: false,
     // Catalogs are flat: `settings.provider.title` is one literal key, not a path.
