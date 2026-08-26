@@ -82,4 +82,17 @@ describe('AboutSettings diagnostics entry', () => {
     await user.click(diagnostics)
     expect(screen.getByText('diagnostic-dialog-open')).toBeInTheDocument()
   })
+
+  it('hides upstream vendor entries in this distribution', async () => {
+    render(<AboutSettings />)
+    await waitFor(() => expect(mocks.request).toHaveBeenCalledWith('app.get_info'))
+
+    for (const label of [
+      'settings.about.releases.button',
+      'settings.about.contact.button',
+      'settings.about.careers.button'
+    ]) {
+      expect(screen.queryByRole('button', { name: label })).not.toBeInTheDocument()
+    }
+  })
 })
