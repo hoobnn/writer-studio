@@ -38,6 +38,7 @@ import { Route as SettingsAppearanceRouteImport } from './routes/settings/appear
 import { Route as SettingsApiGatewayRouteImport } from './routes/settings/api-gateway'
 import { Route as SettingsAboutRouteImport } from './routes/settings/about'
 import { Route as AppWriterRouteImport } from './routes/app/writer'
+import { Route as AppWorkshopRouteImport } from './routes/app/workshop'
 import { Route as AppTranslateRouteImport } from './routes/app/translate'
 import { Route as AppReleaseNotesRouteImport } from './routes/app/release-notes'
 import { Route as AppNotesRouteImport } from './routes/app/notes'
@@ -209,6 +210,11 @@ const AppWriterRoute = AppWriterRouteImport.update({
   path: '/writer',
   getParentRoute: () => AppRoute,
 } as any)
+const AppWorkshopRoute = AppWorkshopRouteImport.update({
+  id: '/workshop',
+  path: '/workshop',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppTranslateRoute = AppTranslateRouteImport.update({
   id: '/translate',
   path: '/translate',
@@ -346,6 +352,7 @@ export interface FileRoutesByFullPath {
   '/app/notes': typeof AppNotesRoute
   '/app/release-notes': typeof AppReleaseNotesRoute
   '/app/translate': typeof AppTranslateRoute
+  '/app/workshop': typeof AppWorkshopRoute
   '/app/writer': typeof AppWriterRoute
   '/settings/about': typeof SettingsAboutRoute
   '/settings/api-gateway': typeof SettingsApiGatewayRoute
@@ -400,6 +407,7 @@ export interface FileRoutesByTo {
   '/app/notes': typeof AppNotesRoute
   '/app/release-notes': typeof AppReleaseNotesRoute
   '/app/translate': typeof AppTranslateRoute
+  '/app/workshop': typeof AppWorkshopRoute
   '/app/writer': typeof AppWriterRoute
   '/settings/about': typeof SettingsAboutRoute
   '/settings/api-gateway': typeof SettingsApiGatewayRoute
@@ -454,6 +462,7 @@ export interface FileRoutesById {
   '/app/notes': typeof AppNotesRoute
   '/app/release-notes': typeof AppReleaseNotesRoute
   '/app/translate': typeof AppTranslateRoute
+  '/app/workshop': typeof AppWorkshopRoute
   '/app/writer': typeof AppWriterRoute
   '/settings/about': typeof SettingsAboutRoute
   '/settings/api-gateway': typeof SettingsApiGatewayRoute
@@ -511,6 +520,7 @@ export interface FileRouteTypes {
     | '/app/notes'
     | '/app/release-notes'
     | '/app/translate'
+    | '/app/workshop'
     | '/app/writer'
     | '/settings/about'
     | '/settings/api-gateway'
@@ -565,6 +575,7 @@ export interface FileRouteTypes {
     | '/app/notes'
     | '/app/release-notes'
     | '/app/translate'
+    | '/app/workshop'
     | '/app/writer'
     | '/settings/about'
     | '/settings/api-gateway'
@@ -618,6 +629,7 @@ export interface FileRouteTypes {
     | '/app/notes'
     | '/app/release-notes'
     | '/app/translate'
+    | '/app/workshop'
     | '/app/writer'
     | '/settings/about'
     | '/settings/api-gateway'
@@ -871,6 +883,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppWriterRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/workshop': {
+      id: '/app/workshop'
+      path: '/workshop'
+      fullPath: '/app/workshop'
+      preLoaderRoute: typeof AppWorkshopRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/translate': {
       id: '/app/translate'
       path: '/translate'
@@ -1053,6 +1072,7 @@ interface AppRouteChildren {
   AppNotesRoute: typeof AppNotesRoute
   AppReleaseNotesRoute: typeof AppReleaseNotesRoute
   AppTranslateRoute: typeof AppTranslateRoute
+  AppWorkshopRoute: typeof AppWorkshopRoute
   AppWriterRoute: typeof AppWriterRoute
   AppMiniAppAppIdRoute: typeof AppMiniAppAppIdRoute
   AppPaintingsSplatRoute: typeof AppPaintingsSplatRoute
@@ -1071,6 +1091,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppNotesRoute: AppNotesRoute,
   AppReleaseNotesRoute: AppReleaseNotesRoute,
   AppTranslateRoute: AppTranslateRoute,
+  AppWorkshopRoute: AppWorkshopRoute,
   AppWriterRoute: AppWriterRoute,
   AppMiniAppAppIdRoute: AppMiniAppAppIdRoute,
   AppPaintingsSplatRoute: AppPaintingsSplatRoute,

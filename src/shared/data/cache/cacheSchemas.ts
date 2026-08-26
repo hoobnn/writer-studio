@@ -373,6 +373,8 @@ export type RendererPersistCacheSchema = {
   // Most recently opened portable Writer project. The project folder remains
   // the source of truth; this cache entry is navigation convenience only.
   'ui.writer.last_project_root': string | null
+  // Most recently opened Workshop project (target-architecture successor of Writer).
+  'ui.workshop.last_project_root': string | null
   // Fixed maps keyed by a JSON-encoded [rootPath, chapterId] tuple. Drafts are
   // recovery-only and never replace the project folder as the source of truth.
   'ui.writer.recovery_drafts': CacheValueTypes.WriterRecoveryDraftMap
@@ -440,6 +442,7 @@ export const DefaultRendererPersistCache: RendererPersistCacheSchema = {
   'ui.sidebar.docked_tabs': [],
   'ui.sidebar.width': 50, // keep in sync with SIDEBAR_ICON_WIDTH (renderer Sidebar/constants.ts)
   'ui.writer.last_project_root': null,
+  'ui.workshop.last_project_root': null,
   'ui.writer.recovery_drafts': {},
   'ui.writer.active_job_ids': {},
   'ui.chat.sidebar.width': 275,
