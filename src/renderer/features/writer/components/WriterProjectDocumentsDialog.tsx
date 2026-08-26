@@ -13,13 +13,15 @@ import {
   TabsTrigger
 } from '@cherrystudio/ui'
 import { formatErrorMessageWithPrefix } from '@renderer/utils/error'
-import type { WriterProject, WriterStoryBible } from '@shared/types/writer'
+import type { WriterContinuityLedger, WriterOutline, WriterProject, WriterStoryBible } from '@shared/types/writer'
 import { Braces, PanelsTopLeft, Save } from 'lucide-react'
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import {
   formatWriterProjectDocument,
+  parseContinuityDraft,
+  parseOutlineDraft,
   parseStoryBibleDraft,
   validateWriterProjectDocument,
   WRITER_PROJECT_DOCUMENT_KINDS,
@@ -27,6 +29,8 @@ import {
   type WriterProjectDocumentSaveRequest
 } from '../projectDocuments'
 import { isWriterRevisionConflict } from '../utils'
+import { WriterContinuityForm } from './WriterContinuityForm'
+import { WriterOutlineForm } from './WriterOutlineForm'
 import { WriterStoryBibleForm } from './WriterStoryBibleForm'
 
 const CodeEditor = lazy(() => import('@cherrystudio/ui/components/composites/code-editor'))
@@ -71,7 +75,11 @@ export function WriterProjectDocumentsDialog({
 }: WriterProjectDocumentsDialogProps) {
   const { t } = useTranslation()
   const [activeKind, setActiveKind] = useState<WriterProjectDocumentKind>('storyBible')
-  const [editorMode, setEditorMode] = useState<EditorMode>('studio')
+  const [editorModes, setEditorModes] = useState<Record<WriterProjectDocumentKind, EditorMode>>({
+    storyBible: 'studio',
+    outline: 'studio',
+    continuity: 'studio'
+  })
   const [drafts, setDrafts] = useState<DocumentDrafts>(() => createDocumentDrafts(project))
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false)
   const draftsRef = useRef(drafts)
@@ -103,14 +111,26 @@ export function WriterProjectDocumentsDialog({
     },
     [activeKind, updateDraft]
   )
-  const handleStoryBibleChange = useCallback(
-    (storyBible: WriterStoryBible) => {
-      updateDraft('storyBible', (draft) => {
-        const text = JSON.stringify(storyBible, null, 2)
+  const handleDocumentChange = useCallback(
+    (kind: WriterProjectDocumentKind, document: WriterStoryBible | WriterOutline | WriterContinuityLedger) => {
+      updateDraft(kind, (draft) => {
+        const text = JSON.stringify(document, null, 2)
         return { ...draft, text, error: '', status: text === draft.baseline ? 'saved' : 'dirty' }
       })
     },
     [updateDraft]
+  )
+  const handleStoryBibleChange = useCallback(
+    (storyBible: WriterStoryBible) => handleDocumentChange('storyBible', storyBible),
+    [handleDocumentChange]
+  )
+  const handleOutlineChange = useCallback(
+    (outline: WriterOutline) => handleDocumentChange('outline', outline),
+    [handleDocumentChange]
+  )
+  const handleContinuityChange = useCallback(
+    (continuity: WriterContinuityLedger) => handleDocumentChange('continuity', continuity),
+    [handleDocumentChange]
   )
 
   const saveActiveDocument = useCallback(async () => {
@@ -191,10 +211,24 @@ export function WriterProjectDocumentsDialog({
   const activeDraft = drafts[activeKind]
   const activeRevision = projectRef.current.documentRevisions[activeKind]
   const anyDocumentSaving = Object.values(drafts).some((draft) => draft.status === 'saving')
-  const storyBibleValidation = validateWriterProjectDocument('storyBible', drafts.storyBible.text)
-  const editableStoryBible = parseStoryBibleDraft(drafts.storyBible.text)
-  const canEnterStudio = storyBibleValidation.ok && storyBibleValidation.value.kind === 'storyBible'
-  const studioMode = activeKind === 'storyBible' && editorMode === 'studio' && Boolean(editableStoryBible)
+  const editableStoryBible = useMemo(() => parseStoryBibleDraft(drafts.storyBible.text), [drafts.storyBible.text])
+  const editableOutline = useMemo(() => parseOutlineDraft(drafts.outline.text), [drafts.outline.text])
+  const editableContinuity = useMemo(() => parseContinuityDraft(drafts.continuity.text), [drafts.continuity.text])
+  const editableDocuments = { continuity: editableContinuity, outline: editableOutline, storyBible: editableStoryBible }
+  const canEnterStudio = useMemo(
+    () => validateWriterProjectDocument(activeKind, activeDraft.text).ok,
+    [activeKind, activeDraft.text]
+  )
+  const editorMode = editorModes[activeKind]
+  const studioMode = editorMode === 'studio' && editableDocuments[activeKind] !== undefined
+  const chapters = useMemo(() => [...project.manifest.chapters].sort((a, b) => a.order - b.order), [project])
+  // Characters come from the (possibly unsaved) story bible draft so entries
+  // added in this dialog are immediately selectable in the continuity form.
+  const characters = useMemo(() => {
+    const source = editableStoryBible?.characters ?? project.storyBible.characters
+    return source.filter((character) => typeof character?.id === 'string' && character.id.length > 0)
+  }, [editableStoryBible, project])
+  const chapterPlans = editableOutline?.chapterPlans ?? project.outline.chapterPlans
 
   return (
     <>
@@ -233,34 +267,28 @@ export function WriterProjectDocumentsDialog({
                 </TabsList>
               </Tabs>
               <div className="border-border border-t p-2">
-                {activeKind === 'storyBible' ? (
-                  <div className="grid grid-cols-2 gap-1 rounded-md border border-border bg-background p-0.5">
-                    <Button
-                      data-ui="writer.story-studio.mode"
-                      type="button"
-                      size="sm"
-                      variant={editorMode === 'studio' ? 'secondary' : 'ghost'}
-                      aria-pressed={editorMode === 'studio'}
-                      disabled={!canEnterStudio && editorMode !== 'studio'}
-                      onClick={() => setEditorMode('studio')}>
-                      <PanelsTopLeft className="size-3.5" aria-hidden />
-                      {t('writer.story_studio.visual_mode')}
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={editorMode === 'json' ? 'secondary' : 'ghost'}
-                      aria-pressed={editorMode === 'json'}
-                      onClick={() => setEditorMode('json')}>
-                      <Braces className="size-3.5" aria-hidden />
-                      {t('writer.story_studio.json_mode')}
-                    </Button>
-                  </div>
-                ) : (
-                  <p className="px-1 py-1.5 text-muted-foreground text-xs leading-5">
-                    {t('writer.documents.schema_hint')}
-                  </p>
-                )}
+                <div className="grid grid-cols-2 gap-1 rounded-md border border-border bg-background p-0.5">
+                  <Button
+                    data-ui="writer.story-studio.mode"
+                    type="button"
+                    size="sm"
+                    variant={editorMode === 'studio' ? 'secondary' : 'ghost'}
+                    aria-pressed={editorMode === 'studio'}
+                    disabled={!canEnterStudio && editorMode !== 'studio'}
+                    onClick={() => setEditorModes((current) => ({ ...current, [activeKind]: 'studio' }))}>
+                    <PanelsTopLeft className="size-3.5" aria-hidden />
+                    {t('writer.story_studio.visual_mode')}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={editorMode === 'json' ? 'secondary' : 'ghost'}
+                    aria-pressed={editorMode === 'json'}
+                    onClick={() => setEditorModes((current) => ({ ...current, [activeKind]: 'json' }))}>
+                    <Braces className="size-3.5" aria-hidden />
+                    {t('writer.story_studio.json_mode')}
+                  </Button>
+                </div>
               </div>
             </aside>
 
@@ -277,11 +305,27 @@ export function WriterProjectDocumentsDialog({
                 role="tabpanel"
                 aria-label={t(DOCUMENT_TAB_LABEL_KEYS[activeKind])}
                 className="min-h-0 flex-1 overflow-hidden [&_.cm-editor]:h-full [&_.cm-scroller]:overflow-auto">
-                {studioMode && editableStoryBible ? (
+                {studioMode && activeKind === 'storyBible' && editableStoryBible ? (
                   <WriterStoryBibleForm
                     storyBible={editableStoryBible}
                     disabled={activeDraft.status === 'saving'}
                     onChange={handleStoryBibleChange}
+                  />
+                ) : studioMode && activeKind === 'outline' && editableOutline ? (
+                  <WriterOutlineForm
+                    outline={editableOutline}
+                    chapters={chapters}
+                    disabled={activeDraft.status === 'saving'}
+                    onChange={handleOutlineChange}
+                  />
+                ) : studioMode && activeKind === 'continuity' && editableContinuity ? (
+                  <WriterContinuityForm
+                    continuity={editableContinuity}
+                    chapters={chapters}
+                    characters={characters}
+                    chapterPlans={chapterPlans}
+                    disabled={activeDraft.status === 'saving'}
+                    onChange={handleContinuityChange}
                   />
                 ) : (
                   <Suspense

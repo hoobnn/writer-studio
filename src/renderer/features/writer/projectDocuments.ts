@@ -45,6 +45,42 @@ export function parseStoryBibleDraft(source: string): WriterStoryBible | undefin
   }
 }
 
+export function parseOutlineDraft(source: string): WriterOutline | undefined {
+  try {
+    const value = JSON.parse(source) as Partial<WriterOutline>
+    if (
+      value.schemaVersion !== 1 ||
+      typeof value.bookSummary !== 'string' ||
+      !Array.isArray(value.arcs) ||
+      !Array.isArray(value.chapterPlans)
+    ) {
+      return undefined
+    }
+    return value as WriterOutline
+  } catch {
+    return undefined
+  }
+}
+
+export function parseContinuityDraft(source: string): WriterContinuityLedger | undefined {
+  try {
+    const value = JSON.parse(source) as Partial<WriterContinuityLedger>
+    if (
+      value.schemaVersion !== 1 ||
+      !Array.isArray(value.facts) ||
+      !Array.isArray(value.foreshadowing) ||
+      !Array.isArray(value.chapterSummaries) ||
+      (value.timelineEvents !== undefined && !Array.isArray(value.timelineEvents)) ||
+      (value.characterStates !== undefined && !Array.isArray(value.characterStates))
+    ) {
+      return undefined
+    }
+    return value as WriterContinuityLedger
+  } catch {
+    return undefined
+  }
+}
+
 export function validateWriterProjectDocument(
   kind: WriterProjectDocumentKind,
   source: string

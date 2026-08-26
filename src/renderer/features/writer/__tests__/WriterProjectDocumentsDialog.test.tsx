@@ -32,8 +32,23 @@ vi.mock('@cherrystudio/ui/components/composites/code-editor', () => ({
 vi.mock('@cherrystudio/ui', async () => {
   const React = await import('react')
   const TabsContext = React.createContext<{ onValueChange?: (value: string) => void; value?: string }>({})
+  const SelectContext = React.createContext<{ onValueChange?: (value: string) => void }>({})
 
   return {
+    Select: ({ children, onValueChange }: { children: ReactNode; onValueChange?: (value: string) => void }) => (
+      <SelectContext value={{ onValueChange }}>{children}</SelectContext>
+    ),
+    SelectContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+    SelectItem: ({ children, value }: { children: ReactNode; value: string }) => {
+      const context = React.use(SelectContext)
+      return (
+        <button type="button" role="option" aria-selected={false} onClick={() => context.onValueChange?.(value)}>
+          {children}
+        </button>
+      )
+    },
+    SelectTrigger: ({ children, ...props }: { children: ReactNode }) => <div {...props}>{children}</div>,
+    SelectValue: () => null,
     Badge: (props: { children: ReactNode; variant?: string }) => {
       const spanProps = { ...props }
       Reflect.deleteProperty(spanProps, 'variant')
@@ -155,8 +170,20 @@ const PROJECT: WriterProject = {
     worldRules: [],
     styleGuide: []
   },
-  outline: { schemaVersion: 1, bookSummary: '', arcs: [], chapterPlans: [] },
-  continuity: { schemaVersion: 1, facts: [], foreshadowing: [], chapterSummaries: [] },
+  outline: {
+    schemaVersion: 1,
+    bookSummary: 'A book about promises.',
+    arcs: [{ id: 'arc-1', title: 'Rise', summary: 'The rise.', chapterIds: [] }],
+    chapterPlans: [
+      { chapterId: 'chapter-1', title: 'Chapter One', goal: 'Open the story.', beats: [], status: 'planned' }
+    ]
+  },
+  continuity: {
+    schemaVersion: 1,
+    facts: [{ id: 'fact-1', subject: 'Mara', predicate: 'owns the key', detail: '' }],
+    foreshadowing: [],
+    chapterSummaries: []
+  },
   documentRevisions: { storyBible: REVISION_A, outline: REVISION_B, continuity: REVISION_C }
 }
 
@@ -235,9 +262,15 @@ describe('WriterProjectDocumentsDialog', () => {
     const editor = await screen.findByRole('textbox', { name: 'project-document-editor' })
     fireEvent.change(editor, { target: { value: JSON.stringify(updatedStoryBible, null, 2) } })
     fireEvent.click(screen.getByRole('tab', { name: 'writer.documents.tabs.outline' }))
-    expect(editor).toHaveValue(JSON.stringify(PROJECT.outline, null, 2))
+    expect(container.querySelector('[data-ui="writer.outline-studio.form"]')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'writer.story_studio.json_mode' }))
+    expect(await screen.findByRole('textbox', { name: 'project-document-editor' })).toHaveValue(
+      JSON.stringify(PROJECT.outline, null, 2)
+    )
     fireEvent.click(screen.getByRole('tab', { name: /writer.documents.tabs.story_bible/ }))
-    expect(editor).toHaveValue(JSON.stringify(updatedStoryBible, null, 2))
+    expect(await screen.findByRole('textbox', { name: 'project-document-editor' })).toHaveValue(
+      JSON.stringify(updatedStoryBible, null, 2)
+    )
     fireEvent.click(container.querySelector('[data-ui="writer.documents.save"]')!)
 
     await waitFor(() => {
@@ -335,5 +368,73 @@ describe('WriterProjectDocumentsDialog', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'writer.documents.close_confirm.confirm' }))
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1))
+  })
+
+  it('opens outline and continuity tabs in studio mode and saves outline edits through the boundary', async () => {
+    const updatedOutline = {
+      ...PROJECT.outline,
+      chapterPlans: [{ ...PROJECT.outline.chapterPlans[0], goal: 'Open the story with a bang.' }]
+    }
+    const savedProject: WriterProject = {
+      ...PROJECT,
+      outline: updatedOutline,
+      documentRevisions: { ...PROJECT.documentRevisions, outline: REVISION_C }
+    }
+    const onSaveDocument = vi.fn().mockResolvedValue(savedProject)
+    const { WriterProjectDocumentsDialog } = await import('../components/WriterProjectDocumentsDialog')
+
+    const { container } = render(
+      <WriterProjectDocumentsDialog
+        project={PROJECT}
+        onClose={vi.fn()}
+        onProjectUpdated={vi.fn()}
+        onSaveDocument={onSaveDocument}
+      />
+    )
+    fireEvent.click(screen.getByRole('tab', { name: 'writer.documents.tabs.outline' }))
+    expect(container.querySelector('[data-ui="writer.outline-studio.form"]')).toBeInTheDocument()
+    fireEvent.change(screen.getByDisplayValue('Open the story.'), {
+      target: { value: 'Open the story with a bang.' }
+    })
+    fireEvent.click(container.querySelector('[data-ui="writer.documents.save"]')!)
+
+    await waitFor(() => {
+      expect(onSaveDocument).toHaveBeenCalledWith({
+        kind: 'outline',
+        document: updatedOutline,
+        expectedRevision: REVISION_B
+      })
+    })
+    const savedDocument = onSaveDocument.mock.calls[0][0].document
+    expect(JSON.parse(JSON.stringify(savedDocument.chapterPlans[0]))).not.toHaveProperty('requirements')
+
+    fireEvent.click(screen.getByRole('tab', { name: 'writer.documents.tabs.continuity' }))
+    expect(container.querySelector('[data-ui="writer.continuity-studio.form"]')).toBeInTheDocument()
+  })
+
+  it('keeps editor modes per tab and falls back to the JSON editor on an invalid draft', async () => {
+    const { WriterProjectDocumentsDialog } = await import('../components/WriterProjectDocumentsDialog')
+
+    const { container } = render(
+      <WriterProjectDocumentsDialog
+        project={PROJECT}
+        onClose={vi.fn()}
+        onProjectUpdated={vi.fn()}
+        onSaveDocument={vi.fn()}
+      />
+    )
+    expect(container.querySelector('[data-ui="writer.story-studio.story-bible"]')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'writer.story_studio.json_mode' }))
+    const editor = await screen.findByRole('textbox', { name: 'project-document-editor' })
+    fireEvent.change(editor, { target: { value: '{ broken json' } })
+    expect(screen.getByRole('button', { name: 'writer.story_studio.visual_mode' })).toBeDisabled()
+
+    fireEvent.click(screen.getByRole('tab', { name: 'writer.documents.tabs.outline' }))
+    expect(container.querySelector('[data-ui="writer.outline-studio.form"]')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'writer.story_studio.visual_mode' })).not.toBeDisabled()
+
+    fireEvent.click(screen.getByRole('tab', { name: /writer.documents.tabs.story_bible/ }))
+    expect(await screen.findByRole('textbox', { name: 'project-document-editor' })).toHaveValue('{ broken json')
+    expect(container.querySelector('[data-ui="writer.story-studio.story-bible"]')).not.toBeInTheDocument()
   })
 })
