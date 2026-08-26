@@ -21,6 +21,30 @@ export function formatWriterProjectDocument(project: WriterProject, kind: Writer
   return JSON.stringify(project[kind], null, 2)
 }
 
+/**
+ * Lenient pre-check used while a studio form is open: keeps the form rendered
+ * through transient invalid states. Full zod validation still gates saving.
+ */
+export function parseStoryBibleDraft(source: string): WriterStoryBible | undefined {
+  try {
+    const value = JSON.parse(source) as Partial<WriterStoryBible>
+    if (
+      value.schemaVersion !== 1 ||
+      !Array.isArray(value.hardRules) ||
+      !Array.isArray(value.themes) ||
+      !Array.isArray(value.characters) ||
+      !Array.isArray(value.loreEntries) ||
+      !Array.isArray(value.worldRules) ||
+      !Array.isArray(value.styleGuide)
+    ) {
+      return undefined
+    }
+    return value as WriterStoryBible
+  } catch {
+    return undefined
+  }
+}
+
 export function validateWriterProjectDocument(
   kind: WriterProjectDocumentKind,
   source: string

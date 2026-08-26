@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next'
 
 import {
   formatWriterProjectDocument,
+  parseStoryBibleDraft,
   validateWriterProjectDocument,
   WRITER_PROJECT_DOCUMENT_KINDS,
   type WriterProjectDocumentKind,
@@ -361,24 +362,4 @@ function createDocumentDrafts(project: WriterProject): DocumentDrafts {
 function createDocumentDraft(project: WriterProject, kind: WriterProjectDocumentKind): DocumentDraft {
   const text = formatWriterProjectDocument(project, kind)
   return { baseline: text, error: '', status: 'saved', text }
-}
-
-function parseStoryBibleDraft(source: string): WriterStoryBible | undefined {
-  try {
-    const value = JSON.parse(source) as Partial<WriterStoryBible>
-    if (
-      value.schemaVersion !== 1 ||
-      !Array.isArray(value.hardRules) ||
-      !Array.isArray(value.themes) ||
-      !Array.isArray(value.characters) ||
-      !Array.isArray(value.loreEntries) ||
-      !Array.isArray(value.worldRules) ||
-      !Array.isArray(value.styleGuide)
-    ) {
-      return undefined
-    }
-    return value as WriterStoryBible
-  } catch {
-    return undefined
-  }
 }
