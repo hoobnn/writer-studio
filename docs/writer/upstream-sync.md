@@ -26,10 +26,11 @@ sources:
 | 本地 main | 只做上游镜像，不放本地提交 |
 | origin/main | 9447bf2e5ea76867d6555f08978762892c7cb0c1 |
 | 分叉计数 | 见 `git rev-list --count --left-right origin/main...product/writer` |
-| 当前 remote | origin 同时 fetch 和 push 到 https://github.com/CherryHQ/cherry-studio.git |
-| 跟踪分支 | 未设置（尚未推送）|
+| origin | https://github.com/CherryHQ/cherry-studio.git，只读上游，无 push 权限 |
+| fork | https://github.com/hoobnn/writer-studio.git，私有，产品线的推送目标 |
+| 跟踪分支 | product/writer 跟踪 fork/product/writer |
 
-本次只读取 remote，没有执行 remote add、set-url、rename 或 fetch。
+origin 与 fork 职责固定：origin 只用于 fetch 上游，产品线一律推送到 fork，不要把同一个 remote 同时当上游和推送目标。
 
 ## 目标
 
