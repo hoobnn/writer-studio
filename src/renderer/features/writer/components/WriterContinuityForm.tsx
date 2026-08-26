@@ -96,7 +96,7 @@ export function WriterContinuityForm({
   const facts = continuity.facts
   const foreshadowing = continuity.foreshadowing
   const chapterSummaries = continuity.chapterSummaries
-  const timelineEvents = continuity.timelineEvents ?? []
+  const timelineEvents = useMemo(() => continuity.timelineEvents ?? [], [continuity.timelineEvents])
   const characterStates = continuity.characterStates ?? []
 
   const tabCounts: Record<ContinuityTab, number> = {
