@@ -11,6 +11,7 @@ import {
 import { ModelSelector } from '@renderer/components/ModelSelector'
 import { useJob, useJobProgress } from '@renderer/hooks/useJob'
 import { useDefaultModel } from '@renderer/hooks/useModel'
+import { useTemporaryValue } from '@renderer/hooks/useTemporaryValue'
 import { ipcApi } from '@renderer/ipc'
 import type { Model } from '@shared/data/types/model'
 import {
@@ -28,7 +29,7 @@ import {
   formatWriterChapterPlanContext,
   selectActiveWriterLoreEntries
 } from '@shared/utils/writerLore'
-import { Bot, Check, Eye, Sparkles, Square, WandSparkles } from 'lucide-react'
+import { Bot, Check, Copy, Eye, Sparkles, Square, WandSparkles } from 'lucide-react'
 import { lazy, Suspense, useCallback, useDeferredValue, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -118,6 +119,7 @@ export function WriterCopilot({
   const [starting, setStarting] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [applyingMode, setApplyingMode] = useState<WriterProposalMode>()
+  const [proposalCopied, setProposalCopied] = useTemporaryValue(false)
   const [proposalRefreshToken, setProposalRefreshToken] = useState(0)
   const deferredCurrentContent = useDeferredValue(currentContent)
   const deferredInstruction = useDeferredValue(instruction)
@@ -227,6 +229,16 @@ export function WriterCopilot({
     } finally {
       setApplyingMode(undefined)
       onApplyingChange(false)
+    }
+  }
+
+  const copyProposal = async () => {
+    if (!proposal) return
+    try {
+      await navigator.clipboard.writeText(proposal.content)
+      setProposalCopied(true)
+    } catch {
+      setErrorMessage(t('writer.errors.copy_proposal'))
     }
   }
 
@@ -479,6 +491,12 @@ export function WriterCopilot({
 
             <WriterContextInspector packet={proposal.contextPacket} title={t('writer.copilot.actual_context')} />
 
+            {proposalApplyModes.length === 0 ? (
+              <Button type="button" variant="outline" className="w-full" onClick={() => void copyProposal()}>
+                {proposalCopied ? <Check className="size-4" aria-hidden /> : <Copy className="size-4" aria-hidden />}
+                {proposalCopied ? t('common.copied') : t('writer.copilot.copy_proposal')}
+              </Button>
+            ) : null}
             {proposal.status === 'pending' && (proposalCanReplace || proposalCanAppend) ? (
               <div className={`grid gap-2 ${proposalCanReplace && proposalCanAppend ? 'grid-cols-2' : 'grid-cols-1'}`}>
                 {proposalCanReplace ? (

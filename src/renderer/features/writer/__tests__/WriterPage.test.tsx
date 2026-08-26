@@ -458,6 +458,38 @@ describe('WriterPage', () => {
     expect(screen.getByText('writer.copilot.job_status.completed')).toBeInTheDocument()
   })
 
+  it('offers copy instead of apply for proposals that cannot write the manuscript', async () => {
+    const brainstormProposal: WriterProposal = {
+      ...PROPOSAL,
+      operation: 'brainstorm',
+      mode: 'replace',
+      contextPacket: { ...PROPOSAL.contextPacket, operation: 'brainstorm' }
+    }
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    const cacheKey = JSON.stringify([PROJECT.rootPath, CHAPTER.chapter.id])
+    mocks.recentProjectRoot = PROJECT.rootPath
+    mocks.activeJobIds = { [cacheKey]: { jobId: 'job-1', updatedAt: NOW } }
+    mocks.request.mockImplementation(async (route: string) => {
+      if (route === 'writer.project.open') return PROJECT
+      if (route === 'writer.chapter.read') return CHAPTER
+      if (route === 'writer.proposal.read') return brainstormProposal
+      throw new Error(`Unexpected route: ${route}`)
+    })
+
+    const { WriterPage } = await import('../WriterPage')
+    render(<WriterPage />)
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'writer.copilot.copy_proposal' })).toBeInTheDocument()
+    )
+    expect(screen.queryByRole('button', { name: 'writer.copilot.append' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'writer.copilot.replace' })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'writer.copilot.copy_proposal' }))
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('Generated proposal'))
+  })
+
   it('discovers and reopens a pending proposal persisted on disk', async () => {
     mocks.selectFolder.mockResolvedValue(PROJECT.rootPath)
     mocks.request.mockImplementation(async (route: string) => {
