@@ -1,11 +1,8 @@
-<!-- Template from https://github.com/kubevirt/kubevirt/blob/main/.github/PULL_REQUEST_TEMPLATE.md?-->
-<!--  Thanks for sending a pull request!  Here are some tips for you:
-1. Consider creating this PR as draft: https://github.com/CherryHQ/cherry-studio/blob/main/CONTRIBUTING.md
--->
-
 > ### Branch strategy
 >
-> - Active development targets `main`.
+> - This repository is a fork of [Cherry Studio](https://github.com/CherryHQ/cherry-studio).
+> - Active development targets `product/writer`.
+> - Fixes to upstream Cherry Studio itself belong in the [upstream repository](https://github.com/CherryHQ/cherry-studio), not here.
 
 ### What this PR does
 
@@ -13,23 +10,21 @@ Before this PR:
 
 After this PR:
 
-<!-- (optional, in `fixes #<issue number>(, fixes #<issue_number>, ...)` format, will close the issue(s) when PR gets merged)*: -->
+<!-- (optional, in `fixes #<issue number>` format, will close the issue when the PR gets merged) -->
 
 Fixes #
 
-### Why we need it and why it was done in this way
+### Why we need it
 
 The following tradeoffs were made:
 
 The following alternatives were considered:
 
-Links to places where the discussion took place: <!-- optional: slack, other GH issue, mailinglist, ... -->
-
 ### Breaking changes
 
 <!-- optional -->
 
-If this PR introduces breaking changes, please describe the changes and the impact on users.
+If this PR introduces breaking changes, describe the change and its impact on users.
 
 ### Special notes for your reviewer
 
@@ -37,25 +32,8 @@ If this PR introduces breaking changes, please describe the changes and the impa
 
 ### Checklist
 
-This checklist is not enforcing, but it's a reminder of items that could be relevant to every PR.
-Approvers are expected to review this list.
-
-- [ ] Branch: This PR targets `main`
-- [ ] PR: The PR description is expressive enough and will help future contributors
-- [ ] Code: [Write code that humans can understand](https://en.wikiquote.org/wiki/Martin_Fowler#code-for-humans) and [Keep it simple](https://en.wikipedia.org/wiki/KISS_principle)
-- [ ] Refactor: You have [left the code cleaner than you found it (Boy Scout Rule)](https://learning.oreilly.com/library/view/97-things-every/9780596809515/ch08.html)
-- [ ] Upgrade: Impact of this change on upgrade flows was considered and addressed if required
-- [ ] Documentation: A [user-guide update](https://docs.cherry-ai.com) was considered and is present (link) or not required. Check this only when the PR introduces or changes a user-facing feature or behavior.
-- [ ] Self-review: I have reviewed my own code (e.g., via [`/gh-pr-review`](/.claude/skills/gh-pr-review/SKILL.md), `gh pr diff`, or GitHub UI) before requesting review from others
-
-### Release note
-
-<!--  Write your release note:
-1. Enter your extended release note in the below block. If the PR requires additional action from users switching to the new release, include the string "action required".
-2. If no release note is required, just write "NONE".
-3. Only include user-facing changes (new features, bug fixes visible to users, UI changes, behavior changes). For CI, maintenance, internal refactoring, build tooling, or other non-user-facing work, write "NONE".
--->
-
-```release-note
-
-```
+- [ ] Branch: This PR targets `product/writer`
+- [ ] Scope: Changes trace to the stated purpose; no unrelated refactoring
+- [ ] Tests: `pnpm lint` and the tests covering this change pass locally
+- [ ] Upstream: If this touches files shared with upstream, the diff avoids
+      gratuitous re-indentation (`git diff -w` matches `git diff`)

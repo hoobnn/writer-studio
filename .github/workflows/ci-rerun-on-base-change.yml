@@ -3,9 +3,7 @@ name: Re-run CI on base branch change
 on:
   pull_request:
     branches:
-      - main
-      - develop
-      - v2
+      - product/writer
     types: [edited]
 
 jobs:
