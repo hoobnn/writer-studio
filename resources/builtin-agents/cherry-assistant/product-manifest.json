@@ -9,6 +9,10 @@
   "routes": {
     "primary": [
       {
+        "id": "writer",
+        "path": "/app/writer"
+      },
+      {
         "id": "assistants",
         "path": "/app/chat"
       },
@@ -58,6 +62,7 @@
       "/app/notes",
       "/app/release-notes",
       "/app/translate",
+      "/app/writer",
       "/settings/about",
       "/settings/api-gateway",
       "/settings/appearance",
