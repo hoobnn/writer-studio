@@ -316,10 +316,15 @@ export function removeI18nKeys(locale: I18N, keys: string[]): I18N {
 }
 
 function findTranslationFiles(): string[] {
-  return fs
-    .readdirSync(LOCALES_DIR)
-    .filter((file) => file.endsWith('.json'))
-    .map((file) => path.join(LOCALES_DIR, file))
+  // Includes the writer pack, which lives one level down so the shared
+  // catalogs stay byte-identical to upstream.
+  const dirs = [LOCALES_DIR, path.join(LOCALES_DIR, 'writer')]
+  return dirs.flatMap((dir) =>
+    fs
+      .readdirSync(dir)
+      .filter((file) => file.endsWith('.json'))
+      .map((file) => path.join(dir, file))
+  )
 }
 
 function parseGroups(groups: string | undefined): string[] {

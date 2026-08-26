@@ -153,6 +153,10 @@ function checkMainKeyCoverage(mainBaseJson: I18N): void {
 function checkTranslations(): void {
   checkCatalog('renderer', path.join(rendererLocalesDir, baseFileName), listJsonFiles(rendererLocalesDir))
 
+  // Writer keys ship in their own pack; validate it with the same rules.
+  const writerLocalesDir = path.join(rendererLocalesDir, 'writer')
+  checkCatalog('renderer/writer', path.join(writerLocalesDir, baseFileName), listJsonFiles(writerLocalesDir))
+
   const mainBaseFilePath = path.join(mainI18nDir, 'locales', baseFileName)
   const mainFiles = listJsonFiles(path.join(mainI18nDir, 'locales'))
   const mainBaseJson = checkCatalog('main', mainBaseFilePath, mainFiles)

@@ -8,6 +8,8 @@ const baseFileName = `${baseLocale}.json`
 
 const catalogDirectories = [
   path.join(__dirname, '../src/renderer/i18n/locales'),
+  // Writer keys are a separate pack so the shared catalogs stay identical to upstream.
+  path.join(__dirname, '../src/renderer/i18n/locales/writer'),
   path.join(__dirname, '../src/main/i18n/locales')
 ]
 
