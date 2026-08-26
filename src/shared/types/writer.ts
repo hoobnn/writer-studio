@@ -761,6 +761,15 @@ export const WriterGenerationStartInputSchema = z.strictObject({
 })
 export type WriterGenerationStartInput = z.infer<typeof WriterGenerationStartInputSchema>
 
+export const WriterContextPreviewInputSchema = WriterGenerationStartInputSchema
+export type WriterContextPreviewInput = z.infer<typeof WriterContextPreviewInputSchema>
+
+export const WriterContextPreviewResultSchema = z.strictObject({
+  uniqueModelId: UniqueModelIdSchema,
+  packet: WriterContextPacketSchema
+})
+export type WriterContextPreviewResult = z.infer<typeof WriterContextPreviewResultSchema>
+
 export const WriterGenerationStartResultSchema = JobSnapshotSchema
 export type WriterGenerationStartResult = JobSnapshot
 

@@ -3,6 +3,8 @@ import {
   WriterChapterDocumentSchema,
   WriterChapterReadInputSchema,
   WriterChapterSaveInputSchema,
+  WriterContextPreviewInputSchema,
+  WriterContextPreviewResultSchema,
   WriterContinuityCoverageUpdateInputSchema,
   WriterContinuityReviewReadInputSchema,
   WriterContinuityReviewRunInputSchema,
@@ -89,6 +91,10 @@ export const writerRequestSchemas = {
   'writer.generation.start': defineRoute({
     input: WriterGenerationStartInputSchema,
     output: WriterGenerationStartResultSchema
+  }),
+  'writer.context.preview': defineRoute({
+    input: WriterContextPreviewInputSchema,
+    output: WriterContextPreviewResultSchema
   }),
   'writer.generation.cancel': defineRoute({
     input: WriterGenerationCancelInputSchema,

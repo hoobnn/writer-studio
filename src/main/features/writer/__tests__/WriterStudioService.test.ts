@@ -79,6 +79,58 @@ describe('WriterStudioService', () => {
     }
   })
 
+  it('previews the exact compiled context without enqueueing or calling a model', async () => {
+    const parentDirectory = await mkdtemp(path.join(tmpdir(), 'writer-service-context-preview-'))
+    vi.spyOn(providerService, 'getByProviderId').mockReturnValue({
+      isEnabled: true,
+      authMethods: ['api-key']
+    } as never)
+    vi.spyOn(modelService, 'getByKey').mockReturnValue({
+      id: 'provider::preview',
+      providerId: 'provider',
+      name: 'Preview model',
+      capabilities: [],
+      isEnabled: true,
+      contextWindow: 32_000
+    } as never)
+    const service = new WriterStudioService()
+
+    try {
+      let project = await service.createProject({ parentDirectory, title: '上下文预检' })
+      project = await service.saveStoryBible({
+        rootPath: project.rootPath,
+        expectedRevision: project.documentRevisions.storyBible,
+        storyBible: { ...project.storyBible, hardRules: ['门只能从里面打开。'] }
+      })
+      const chapter = await service.saveChapter(
+        project.rootPath,
+        project.manifest.activeChapterId,
+        '她把手放在门闩上。',
+        project.manifest.chapters[0].revision
+      )
+
+      const preview = await service.previewContext({
+        rootPath: project.rootPath,
+        chapterId: chapter.chapter.id,
+        operation: 'continue',
+        instruction: '让她先听见门外的脚步。',
+        uniqueModelId: 'provider::preview'
+      })
+
+      expect(preview.uniqueModelId).toBe('provider::preview')
+      expect(preview.packet.documentRevisions).toEqual(project.documentRevisions)
+      expect(preview.packet.sources).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ kind: 'hard_rule', content: '门只能从里面打开。' }),
+          expect.objectContaining({ kind: 'current_chapter', content: '她把手放在门闩上。' })
+        ])
+      )
+      expect(application.get).not.toHaveBeenCalled()
+    } finally {
+      await rm(parentDirectory, { recursive: true, force: true })
+    }
+  })
+
   it('serializes structured document saves so concurrent stale writers cannot both win', async () => {
     const parentDirectory = await mkdtemp(path.join(tmpdir(), 'writer-service-structured-'))
     const service = new WriterStudioService()

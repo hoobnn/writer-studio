@@ -6,6 +6,8 @@ import { BaseService, DependsOn, Injectable, Phase, ServicePhase } from '@main/c
 import { writerErrorCodes } from '@shared/ipc/errors/writer'
 import type {
   WriterChapterDocument,
+  WriterContextPreviewInput,
+  WriterContextPreviewResult,
   WriterContinuityCoverageUpdateInput,
   WriterContinuityReviewReadInput,
   WriterContinuityReviewRunInput,
@@ -36,6 +38,7 @@ import { buildWriterContinuityReviewView, compileWriterContinuityAudit } from '.
 import { WriterStudioError } from './writerErrors'
 import { createWriterGenerationJobHandler } from './writerGenerationJobHandler'
 import { computeWriterContextBudgetChars, resolveWriterGenerationModel } from './writerModelPolicy'
+import { compileWriterProjectContext } from './writerProjectContext'
 import { WriterProjectRepository } from './WriterProjectRepository'
 
 @Injectable('WriterStudioService')
@@ -313,17 +316,7 @@ export class WriterStudioService extends BaseService {
       const project = await this.repository.openProject(canonicalRoot)
       const chapterId = input.chapterId ?? project.manifest.activeChapterId
       const chapter = await this.repository.readChapterFromProject(project, chapterId)
-      const model = this.resolveModel(input.uniqueModelId)
-      const contextBudgetChars = computeWriterContextBudgetChars({
-        contextWindow: model.contextWindow,
-        instructionChars: input.instruction?.length ?? 0
-      })
-      if (contextBudgetChars <= 0) {
-        throw new WriterStudioError(
-          writerErrorCodes.CONTEXT_BUDGET_EXHAUSTED,
-          'Writer instruction leaves no safe context room for the selected model'
-        )
-      }
+      const { model, contextBudgetChars } = this.resolveContextPlan(input)
       const handle = application.get('JobManager').enqueue('writer.generate-proposal', {
         rootPath: project.rootPath,
         chapterId,
@@ -335,6 +328,25 @@ export class WriterStudioService extends BaseService {
         instruction: input.instruction
       })
       return handle.snapshot
+    })
+  }
+
+  async previewContext(input: WriterContextPreviewInput): Promise<WriterContextPreviewResult> {
+    const canonicalRoot = await this.repository.resolveProjectRoot(input.rootPath)
+    return await this.projectLock.runExclusive(canonicalRoot, async () => {
+      const project = await this.repository.openProject(canonicalRoot)
+      const chapterId = input.chapterId ?? project.manifest.activeChapterId
+      const currentChapter = await this.repository.readChapterFromProject(project, chapterId)
+      const { model, contextBudgetChars } = this.resolveContextPlan(input)
+      const packet = await compileWriterProjectContext({
+        repository: this.repository,
+        project,
+        currentChapter,
+        instruction: input.instruction,
+        operation: input.operation,
+        budgetChars: contextBudgetChars
+      })
+      return { uniqueModelId: model.uniqueModelId, packet }
     })
   }
 
@@ -432,6 +444,21 @@ export class WriterStudioService extends BaseService {
         getModel: (providerId, modelId) => modelService.getByKey(providerId, modelId)
       }
     )
+  }
+
+  private resolveContextPlan(input: WriterContextPreviewInput) {
+    const model = this.resolveModel(input.uniqueModelId)
+    const contextBudgetChars = computeWriterContextBudgetChars({
+      contextWindow: model.contextWindow,
+      instructionChars: input.instruction?.length ?? 0
+    })
+    if (contextBudgetChars <= 0) {
+      throw new WriterStudioError(
+        writerErrorCodes.CONTEXT_BUDGET_EXHAUSTED,
+        'Writer instruction leaves no safe context room for the selected model'
+      )
+    }
+    return { model, contextBudgetChars }
   }
 
   private assertContinuityReviewRevision(expected: string, actual: string): void {
