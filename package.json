@@ -29,7 +29,7 @@
     "build:mac": "dotenv pnpm run build && electron-builder --mac --arm64 --x64",
     "build:mac:arm64": "dotenv pnpm run build && electron-builder --mac --arm64",
     "build:mac:x64": "dotenv pnpm run build && electron-builder --mac --x64",
-    "build:writer:mac:arm64": "dotenv pnpm run build && electron-builder --config electron-builder.writer.ts --mac zip --arm64 --publish never && electron-builder --config electron-builder.writer.ts --prepackaged \"dist/writer-studio/mac-arm64/Writer Studio.app\" --mac dmg --arm64 --publish never",
+    "build:writer:mac:arm64": "pnpm rebuild:electron && dotenv pnpm run build && electron-builder --config electron-builder.writer.ts --mac zip --arm64 --publish never && electron-builder --config electron-builder.writer.ts --prepackaged \"dist/writer-studio/mac-arm64/Writer Studio.app\" --mac dmg --arm64 --publish never",
     "build:linux": "dotenv pnpm run build && electron-builder --linux --x64 --arm64",
     "build:linux:arm64": "dotenv pnpm run build && electron-builder --linux --arm64",
     "build:linux:x64": "dotenv pnpm run build && electron-builder --linux --x64",

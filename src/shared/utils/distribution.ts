@@ -6,5 +6,6 @@ export const DISTRIBUTION = Object.freeze({
   protocol: 'writerstudio',
   updatesEnabled: false,
   upstreamServicesEnabled: false,
-  vendorOAuthEnabled: false
+  vendorOAuthEnabled: false,
+  version: '0.1.0'
 })
