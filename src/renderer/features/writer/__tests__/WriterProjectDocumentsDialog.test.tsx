@@ -2,6 +2,7 @@ import { IpcError } from '@shared/ipc/errors/IpcError'
 import { writerErrorCodes } from '@shared/ipc/errors/writer'
 import type { WriterProject } from '@shared/types/writer'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -82,6 +83,7 @@ vi.mock('@cherrystudio/ui', async () => {
     DialogFooter: ({ children, ...props }: { children: ReactNode }) => <div {...props}>{children}</div>,
     DialogHeader: ({ children, ...props }: { children: ReactNode }) => <div {...props}>{children}</div>,
     DialogTitle: ({ children, ...props }: { children: ReactNode }) => <h2 {...props}>{children}</h2>,
+    Input: (props: React.InputHTMLAttributes<HTMLInputElement>) => <input {...props} />,
     Tabs: ({
       children,
       onValueChange,
@@ -108,6 +110,9 @@ vi.mock('@cherrystudio/ui', async () => {
           {children}
         </button>
       )
+    },
+    Textarea: {
+      Input: (props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => <textarea {...props} />
     }
   }
 })
@@ -160,6 +165,51 @@ describe('WriterProjectDocumentsDialog', () => {
     mocks.editorProps = undefined
   })
 
+  it('saves visual story bible edits through the same revision-protected boundary', async () => {
+    const user = userEvent.setup()
+    const updatedStoryBible = {
+      ...PROJECT.storyBible,
+      authorGoal: 'Make every choice carry a visible cost.',
+      characters: [{ id: 'character-1', name: 'Mara', role: '', description: '', goals: [], constraints: [] }]
+    }
+    const savedProject: WriterProject = {
+      ...PROJECT,
+      storyBible: updatedStoryBible,
+      documentRevisions: { ...PROJECT.documentRevisions, storyBible: REVISION_B }
+    }
+    const onSaveDocument = vi.fn().mockResolvedValue(savedProject)
+    const onProjectUpdated = vi.fn()
+    const { WriterProjectDocumentsDialog } = await import('../components/WriterProjectDocumentsDialog')
+
+    render(
+      <WriterProjectDocumentsDialog
+        project={PROJECT}
+        onClose={vi.fn()}
+        onProjectUpdated={onProjectUpdated}
+        onSaveDocument={onSaveDocument}
+      />
+    )
+
+    await user.type(
+      screen.getByRole('textbox', { name: 'writer.story_studio.author_goal' }),
+      updatedStoryBible.authorGoal
+    )
+    await user.click(screen.getByRole('button', { name: 'writer.story_studio.add_character' }))
+    const characterName = screen.getByRole('textbox', { name: 'common.name' })
+    await user.clear(characterName)
+    await user.type(characterName, 'Mara')
+    await user.click(screen.getByRole('button', { name: 'common.save' }))
+
+    await waitFor(() => {
+      expect(onSaveDocument).toHaveBeenCalledWith({
+        kind: 'storyBible',
+        document: updatedStoryBible,
+        expectedRevision: REVISION_A
+      })
+    })
+    expect(onProjectUpdated).toHaveBeenCalledWith(savedProject)
+  })
+
   it('validates and saves a complete structured document with its current revision', async () => {
     const onClose = vi.fn()
     const onProjectUpdated = vi.fn()
@@ -181,6 +231,7 @@ describe('WriterProjectDocumentsDialog', () => {
       />
     )
     expect(container.querySelector('[data-ui="writer.documents.dialog"]')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'writer.story_studio.json_mode' }))
     const editor = await screen.findByRole('textbox', { name: 'project-document-editor' })
     fireEvent.change(editor, { target: { value: JSON.stringify(updatedStoryBible, null, 2) } })
     fireEvent.click(screen.getByRole('tab', { name: 'writer.documents.tabs.outline' }))
@@ -212,6 +263,7 @@ describe('WriterProjectDocumentsDialog', () => {
         onSaveDocument={onSaveDocument}
       />
     )
+    fireEvent.click(screen.getByRole('button', { name: 'writer.story_studio.json_mode' }))
     fireEvent.change(await screen.findByRole('textbox', { name: 'project-document-editor' }), {
       target: { value: '{ invalid json' }
     })
@@ -244,6 +296,7 @@ describe('WriterProjectDocumentsDialog', () => {
         onSaveDocument={onSaveDocument}
       />
     )
+    fireEvent.click(screen.getByRole('button', { name: 'writer.story_studio.json_mode' }))
     const editor = await screen.findByRole('textbox', { name: 'project-document-editor' })
     fireEvent.change(editor, { target: { value: JSON.stringify(firstDocument, null, 2) } })
     fireEvent.click(container.querySelector('[data-ui="writer.documents.save"]')!)
@@ -268,6 +321,7 @@ describe('WriterProjectDocumentsDialog', () => {
         onSaveDocument={onSaveDocument}
       />
     )
+    fireEvent.click(screen.getByRole('button', { name: 'writer.story_studio.json_mode' }))
     const editor = await screen.findByRole('textbox', { name: 'project-document-editor' })
     const conflictingDraft = JSON.stringify({ ...PROJECT.storyBible, authorGoal: 'Keep this local draft.' }, null, 2)
     fireEvent.change(editor, { target: { value: conflictingDraft } })
