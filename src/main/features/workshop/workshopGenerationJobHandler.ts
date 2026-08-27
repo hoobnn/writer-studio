@@ -57,7 +57,8 @@ export function createWorkshopGenerationJobHandler(projectLock: KeyedMutex): Job
         if (await kernel.proposalExists(proposalId)) return null
 
         return collectWorkshopContext(kernel, {
-          targetChapterId: ctx.input.role === 'planner' ? undefined : ctx.input.chapterId
+          targetChapterId: ctx.input.role === 'planner' ? undefined : ctx.input.chapterId,
+          retrievalQuery: ctx.input.role === 'writer' ? ctx.input.instruction : undefined
         })
       })
       if (context === null) {

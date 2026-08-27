@@ -429,6 +429,28 @@ export const WorkshopChapterCycleStartInputSchema = z.strictObject({
 })
 export type WorkshopChapterCycleStartInput = z.infer<typeof WorkshopChapterCycleStartInputSchema>
 
+export const WorkshopVolumeRunStartInputSchema = z.strictObject({
+  rootPath: z.string().trim().min(1),
+  volumeId: WorkshopIdSchema,
+  instruction: z.string().trim().min(1).max(20_000),
+  gate: z.enum(['auto', 'review']).default('auto'),
+  maxChapters: z.number().int().min(1).max(50).default(10),
+  uniqueModelId: UniqueModelIdSchema.optional()
+})
+export type WorkshopVolumeRunStartInput = z.infer<typeof WorkshopVolumeRunStartInputSchema>
+
+export const WorkshopExportInputSchema = z.strictObject({
+  rootPath: z.string().trim().min(1),
+  format: z.enum(['markdown', 'txt', 'epub', 'docx'])
+})
+export type WorkshopExportInput = z.infer<typeof WorkshopExportInputSchema>
+
+export const WorkshopExportResultSchema = z.strictObject({
+  /** docx 走系统保存对话框,路径由用户决定,返回 null。 */
+  filePath: z.string().nullable()
+})
+export type WorkshopExportResult = z.infer<typeof WorkshopExportResultSchema>
+
 export const WorkshopGenerationJobInputSchema = z.strictObject({ jobId: z.string().trim().min(1) })
 export type WorkshopGenerationJobInput = z.infer<typeof WorkshopGenerationJobInputSchema>
 

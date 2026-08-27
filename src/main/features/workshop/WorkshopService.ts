@@ -20,6 +20,8 @@ import type {
   WorkshopEntityListInput,
   WorkshopEntityListResult,
   WorkshopEntityReadInput,
+  WorkshopExportInput,
+  WorkshopExportResult,
   WorkshopGenerationCancelResult,
   WorkshopGenerationStartInput,
   WorkshopGenerationStartResult,
@@ -37,7 +39,8 @@ import type {
   WorkshopRollbackInput,
   WorkshopTimelineEntry,
   WorkshopTimelineListInput,
-  WorkshopTimelineListResult
+  WorkshopTimelineListResult,
+  WorkshopVolumeRunStartInput
 } from '@shared/types/workshop'
 
 import { createWorkshopChapterCycleJobHandler } from './workshopChapterCycleJobHandler'
@@ -45,10 +48,12 @@ import { collectWorkshopContext } from './workshopContext'
 import { createWorkshopDiscussionJobHandler } from './workshopDiscussionJobHandler'
 import { appendDiscussionMessage, readDiscussion } from './workshopDiscussionStore'
 import { WorkshopError, workshopErrorCodes } from './workshopErrors'
+import { assembleManuscript, exportWorkshopManuscript, renderMarkdown } from './workshopExport'
 import { createWorkshopGenerationJobHandler } from './workshopGenerationJobHandler'
 import { runWorkshopInvariants } from './workshopInvariants'
 import { WorkshopKernel } from './WorkshopKernel'
 import { resolveWorkshopGenerationModel } from './workshopModelPolicy'
+import { createWorkshopVolumeRunJobHandler } from './workshopVolumeRunJobHandler'
 
 const logger = loggerService.withContext('workshopService')
 
@@ -78,6 +83,7 @@ export class WorkshopService extends BaseService {
     jobManager.registerHandler('workshop.generate-proposal', createWorkshopGenerationJobHandler(this.projectLock))
     jobManager.registerHandler('workshop.discussion-turn', createWorkshopDiscussionJobHandler(this.projectLock))
     jobManager.registerHandler('workshop.chapter-cycle', createWorkshopChapterCycleJobHandler(this.projectLock))
+    jobManager.registerHandler('workshop.volume-run', createWorkshopVolumeRunJobHandler(this.projectLock))
   }
 
   private async canonicalRoot(rootPath: string): Promise<string> {
@@ -269,8 +275,27 @@ export class WorkshopService extends BaseService {
 
   private isWorkshopJob(type: string): boolean {
     return (
-      type === 'workshop.generate-proposal' || type === 'workshop.discussion-turn' || type === 'workshop.chapter-cycle'
+      type === 'workshop.generate-proposal' ||
+      type === 'workshop.discussion-turn' ||
+      type === 'workshop.chapter-cycle' ||
+      type === 'workshop.volume-run'
     )
+  }
+
+  async startVolumeRun(input: WorkshopVolumeRunStartInput): Promise<WorkshopGenerationStartResult> {
+    const root = await this.canonicalRoot(input.rootPath)
+    const kernel = await WorkshopKernel.open(root)
+    await kernel.readEntity('outline/volumes', input.volumeId)
+    const uniqueModelId = this.resolveGenerationModel(input.uniqueModelId)
+    const handle = application.get('JobManager').enqueue('workshop.volume-run', {
+      rootPath: root,
+      volumeId: input.volumeId,
+      instruction: input.instruction,
+      uniqueModelId,
+      gate: input.gate,
+      maxChapters: input.maxChapters
+    })
+    return handle.snapshot
   }
 
   async startChapterCycle(input: WorkshopChapterCycleStartInput): Promise<WorkshopGenerationStartResult> {
@@ -284,6 +309,18 @@ export class WorkshopService extends BaseService {
       uniqueModelId
     })
     return handle.snapshot
+  }
+
+  async exportManuscript(input: WorkshopExportInput): Promise<WorkshopExportResult> {
+    return this.withProject(input.rootPath, async (kernel) => {
+      if (input.format === 'docx') {
+        const manuscript = await assembleManuscript(kernel)
+        const { ExportService } = await import('@main/services/ExportService')
+        await new ExportService().exportToWord(renderMarkdown(manuscript), `${manuscript.title}.docx`)
+        return { filePath: null }
+      }
+      return exportWorkshopManuscript(kernel, input.format)
+    })
   }
 
   async runInvariants(input: WorkshopInvariantRunInput): Promise<WorkshopInvariantReport> {

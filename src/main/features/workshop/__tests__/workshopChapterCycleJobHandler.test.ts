@@ -103,9 +103,17 @@ describe('workshopChapterCycleJobHandler', () => {
     for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true })
   })
 
-  it('一轮通过:产出正文+台账的单一原子提案,机检通过标注在 rationale', async () => {
+  const reviewerPass = () => JSON.stringify({ verdict: 'pass', notes: '成稿达标' })
+  const reviewerRevise = (detail: string) =>
+    JSON.stringify({ verdict: 'revise', notes: '', findings: [{ severity: 'error', detail }] })
+
+  it('一轮通过:产出正文+台账的单一原子提案,质量关结论标注在 rationale', async () => {
     const kernel = await newProject()
-    const generate = stubAiService([writerDraft('风从海上来。'), guardianExtract([{ id: 's1', lifeStatus: 'alive' }])])
+    const generate = stubAiService([
+      writerDraft('风从海上来。'),
+      guardianExtract([{ id: 's1', lifeStatus: 'alive' }]),
+      reviewerPass()
+    ])
     const handler = createWorkshopChapterCycleJobHandler(new KeyedMutex())
     const output = await handler.execute(
       jobContext('cycle-1', {
@@ -116,10 +124,10 @@ describe('workshopChapterCycleJobHandler', () => {
       }) as never
     )
     expect(output).toEqual({ proposalId: 'cycle-1' })
-    expect(generate).toHaveBeenCalledTimes(2)
+    expect(generate).toHaveBeenCalledTimes(3)
 
     const proposal = await kernel.readProposal('cycle-1')
-    expect(proposal.rationale).toContain('机检通过')
+    expect(proposal.rationale).toContain('机检与审校通过')
     const changes = await kernel.readProposalChanges('cycle-1')
     const files = changes.map((change) => change.filepath).sort()
     expect(files).toEqual(['ledger/states/s1.json', 'ledger/summaries/ch-0001.json', 'manuscript/ch-0001.md'])
@@ -175,7 +183,8 @@ describe('workshopChapterCycleJobHandler', () => {
       writerDraft('林远醒来,毫发无伤。'),
       guardianExtract([{ id: 's1', lifeStatus: 'alive' }]),
       writerDraft('林远在祭坛仪式中复生,代价是十年寿命。'),
-      guardianExtract([{ id: 's1', lifeStatus: 'alive', explanation: '祭坛复生仪式' }])
+      guardianExtract([{ id: 's1', lifeStatus: 'alive', explanation: '祭坛复生仪式' }]),
+      reviewerPass()
     ])
     const handler = createWorkshopChapterCycleJobHandler(new KeyedMutex())
     await handler.execute(
@@ -186,15 +195,41 @@ describe('workshopChapterCycleJobHandler', () => {
         uniqueModelId: 'cherryai:test' as never
       }) as never
     )
-    expect(generate).toHaveBeenCalledTimes(4)
+    expect(generate).toHaveBeenCalledTimes(5)
     const secondWriterPrompt = generate.mock.calls[2][0] as string
     expect(secondWriterPrompt).toContain('连续性错误')
     expect(secondWriterPrompt).toContain('复活')
 
     const proposal = await kernel.readProposal('cycle-2')
-    expect(proposal.rationale).toContain('机检通过')
+    expect(proposal.rationale).toContain('机检与审校通过')
     await kernel.applyProposal('cycle-2')
     expect(await kernel.readChapter('ch-0001')).toContain('祭坛')
+  })
+
+  it('审校要求重写时携带审校发现进入下一轮', async () => {
+    const kernel = await newProject()
+    const generate = stubAiService([
+      writerDraft('第一稿。'),
+      guardianExtract([{ id: 's1', lifeStatus: 'alive' }]),
+      reviewerRevise('主角动机断裂:没有理由出海'),
+      writerDraft('第二稿:为寻找失踪的父亲,林远出海。'),
+      guardianExtract([{ id: 's1', lifeStatus: 'alive' }]),
+      reviewerPass()
+    ])
+    const handler = createWorkshopChapterCycleJobHandler(new KeyedMutex())
+    await handler.execute(
+      jobContext('cycle-4', {
+        rootPath: kernel.rootPath,
+        chapterId: 'ch-0001',
+        instruction: '写第一章',
+        uniqueModelId: 'cherryai:test' as never
+      }) as never
+    )
+    expect(generate).toHaveBeenCalledTimes(6)
+    const secondWriterPrompt = generate.mock.calls[3][0] as string
+    expect(secondWriterPrompt).toContain('[审校]')
+    expect(secondWriterPrompt).toContain('动机断裂')
+    expect((await kernel.readProposal('cycle-4')).rationale).toContain('机检与审校通过')
   })
 
   it('修订轮次用尽仍有错误时,提案保留并在 rationale 标注待裁决', async () => {

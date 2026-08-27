@@ -11,6 +11,8 @@ export interface WorkshopContextData {
   entities: { collection: WorkshopCollection; entity: WorkshopEntity }[]
   chapterIds: string[]
   targetChapter?: { chapterId: string; content: string }
+  /** 检索召回的相关前文(尾部片段),供写作时保持衔接。 */
+  relatedChapters?: { chapterId: string; contentTail: string }[]
 }
 
 /** 以只读 JSON 行的形式序列化项目资料,按集合重要度排序并按预算截断。 */
@@ -34,6 +36,9 @@ export function serializeWorkshopContext(data: WorkshopContextData): string {
         contentTail: data.targetChapter.content.slice(-TARGET_CHAPTER_TAIL_CHARS)
       })
     )
+  }
+  for (const related of data.relatedChapters ?? []) {
+    push(JSON.stringify({ kind: 'related_chapter', chapterId: related.chapterId, contentTail: related.contentTail }))
   }
 
   const order: WorkshopCollection[] = [
@@ -108,12 +113,22 @@ const GUARDIAN_CONTRACT = [
   '更新既有条目沿用其 id;一切内容必须有正文证据,不得臆测。'
 ].join('\n')
 
+const REVIEWER_CONTRACT = [
+  '输出契约(JSON 对象):',
+  '{ "verdict": "pass" | "revise", "notes": 总体评语, "findings": [{ "severity": "error"|"warning", "detail": 具体问题与定位 }] }',
+  'error 级仅用于:人物动机断裂、与既有正史/章计划冲突、叙事视角或时态错乱等必须重写的问题。',
+  '文风、节奏、措辞建议记为 warning;没有必须重写的问题时 verdict 给 pass。',
+  '每个判断必须引用资料或草稿中的具体证据,不得泛泛而谈。'
+].join('\n')
+
 const ROLE_GUIDANCE = {
   planner:
     '你是策划。依据作者要求产出结构化的故事资料提案:设定(人物/世界观/规则)、分卷、故事弧或章节计划。先想清楚因果与结构,再落成实体。',
   writer: '你是写手。依据章计划与既有正史撰写章节正文,续写时不重复已经发生的内容,输出可直接入稿的成品文字。',
   guardian:
-    '你是连续性守卫。通读目标章节正文,把其中已成为正史的信息提取进台账:本章摘要、新事实、伏笔的埋设与回收、人物位置与生死状态、时间线事件。只提取,不创作。'
+    '你是连续性守卫。通读目标章节正文,把其中已成为正史的信息提取进台账:本章摘要、新事实、伏笔的埋设与回收、人物位置与生死状态、时间线事件。只提取,不创作。',
+  reviewer:
+    '你是审校。对照章计划与既有正史审读目标章节草稿:人物动机是否成立、是否与正史冲突、节奏与文风是否达标。给出结构化判定。'
 } as const
 
 const DISCUSSION_HISTORY_BUDGET_CHARS = 8_000
@@ -171,11 +186,12 @@ export interface WorkshopGenerationPrompt {
 const ROLE_CONTRACTS = {
   planner: PLANNER_CONTRACT,
   writer: WRITER_CONTRACT,
-  guardian: GUARDIAN_CONTRACT
+  guardian: GUARDIAN_CONTRACT,
+  reviewer: REVIEWER_CONTRACT
 } as const
 
 export function buildWorkshopGenerationPrompt(input: {
-  role: 'planner' | 'writer' | 'guardian'
+  role: 'planner' | 'writer' | 'guardian' | 'reviewer'
   instruction: string
   context: WorkshopContextData
 }): WorkshopGenerationPrompt {

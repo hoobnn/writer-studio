@@ -15,6 +15,8 @@ import {
   buildWriterChangeset,
   type WorkshopGuardianOutput,
   WorkshopGuardianOutputSchema,
+  type WorkshopReviewerOutput,
+  WorkshopReviewerOutputSchema,
   type WorkshopWriterOutput,
   WorkshopWriterOutputSchema
 } from './workshopAgentOutput'
@@ -35,9 +37,11 @@ export interface WorkshopChapterCycleJobPayload {
   chapterId: string
   instruction: string
   uniqueModelId: UniqueModelId
+  /** 是否在机检之后追加审校关卡(默认开)。 */
+  review?: boolean
 }
 
-/** 有界修订:机检发现新增 error 时最多重写这么多轮,仍不过则携带发现交人裁决。 */
+/** 有界修订:机检或审校要求重写时最多这么多轮,仍不过则携带发现交人裁决。 */
 const MAX_REVISION_ROUNDS = 2
 
 /** 把写手+守卫的候选产出叠加到实体快照上,得到"假如应用"的图,供不变量引擎评估。 */
@@ -73,6 +77,150 @@ function materializeCandidate(
   }
 }
 
+export interface ChapterCycleParams {
+  rootPath: string
+  chapterId: string
+  instruction: string
+  uniqueModelId: UniqueModelId
+  proposalId: string
+  review: boolean
+  signal: AbortSignal
+  projectLock: KeyedMutex
+  reportStage?: (stage: string, round: number) => void
+}
+
+export interface ChapterCycleResult {
+  proposalId: string
+  /** 机检+审校在预算内全部通过。 */
+  clean: boolean
+  recovered: boolean
+}
+
+/**
+ * 单章生产循环核心:写手成稿 → 守卫提取台账 → 机检 →(可选)审校 → 有界修订,
+ * 最终落为一个"正文+计划状态+台账"的原子提案。整卷流水线按章复用本函数。
+ */
+export async function produceChapterProposal(params: ChapterCycleParams): Promise<ChapterCycleResult> {
+  const { rootPath, chapterId, proposalId, signal } = params
+  const base = await params.projectLock.runExclusive(rootPath, async () => {
+    const kernel = await WorkshopKernel.open(rootPath)
+    if (await kernel.proposalExists(proposalId)) return null
+    return collectWorkshopContext(kernel, { targetChapterId: chapterId, retrievalQuery: params.instruction })
+  })
+  if (base === null) return { proposalId, clean: true, recovered: true }
+
+  const aiService = application.get('AiService')
+  const baselineErrorKeys = new Set(
+    runWorkshopInvariants(base)
+      .filter((finding) => finding.severity === 'error')
+      .map((finding) => finding.key)
+  )
+  const callStructured = async <T>(
+    role: 'writer' | 'guardian' | 'reviewer',
+    instruction: string,
+    schema: never,
+    context: WorkshopContextData
+  ) => {
+    const prompt = buildWorkshopGenerationPrompt({ role, instruction, context })
+    const { object } = await aiService.generateStructured(
+      {
+        uniqueModelId: params.uniqueModelId,
+        system: prompt.system,
+        prompt: prompt.prompt,
+        contextOwner: 'caller' as const,
+        requestOptions: { signal, maxRetries: 0 }
+      },
+      schema,
+      { maxRepairAttempts: 1 }
+    )
+    return object as T
+  }
+
+  let writerOutput: WorkshopWriterOutput | undefined
+  let guardianOutput: WorkshopGuardianOutput | undefined
+  let blockingNotes: string[] = []
+  let clean = false
+  for (let round = 0; round <= MAX_REVISION_ROUNDS; round++) {
+    signal.throwIfAborted()
+    params.reportStage?.('drafting', round + 1)
+    const revisionNote =
+      blockingNotes.length > 0
+        ? `\n上一稿存在以下必须消除的问题:\n${blockingNotes.map((note) => `- ${note}`).join('\n')}`
+        : ''
+    writerOutput = await callStructured<WorkshopWriterOutput>(
+      'writer',
+      `${params.instruction}${revisionNote}\n目标章节:${chapterId}`,
+      WorkshopWriterOutputSchema as never,
+      base
+    )
+    if (writerOutput.chapterId !== chapterId) writerOutput = { ...writerOutput, chapterId }
+
+    signal.throwIfAborted()
+    params.reportStage?.('extracting', round + 1)
+    guardianOutput = await callStructured<WorkshopGuardianOutput>(
+      'guardian',
+      `提取第 ${chapterId} 章草稿的台账更新`,
+      WorkshopGuardianOutputSchema as never,
+      { ...base, targetChapter: { chapterId, content: writerOutput.content } }
+    )
+    if (guardianOutput.chapterId !== chapterId) guardianOutput = { ...guardianOutput, chapterId }
+
+    const candidate = materializeCandidate(base, chapterId, guardianOutput, writerOutput.planStatus)
+    const newErrors: WorkshopFinding[] = runWorkshopInvariants(candidate).filter(
+      (finding) => finding.severity === 'error' && !baselineErrorKeys.has(finding.key)
+    )
+    blockingNotes = newErrors.map((finding) => `[连续性错误] ${finding.detail}`)
+
+    if (blockingNotes.length === 0 && params.review) {
+      signal.throwIfAborted()
+      params.reportStage?.('reviewing', round + 1)
+      const review = await callStructured<WorkshopReviewerOutput>(
+        'reviewer',
+        `审阅第 ${chapterId} 章草稿`,
+        WorkshopReviewerOutputSchema as never,
+        { ...base, targetChapter: { chapterId, content: writerOutput.content } }
+      )
+      if (review.verdict === 'revise') {
+        blockingNotes = review.findings
+          .filter((finding) => finding.severity === 'error')
+          .map((finding) => `[审校] ${finding.detail}`)
+        if (blockingNotes.length === 0 && review.notes) blockingNotes = [`[审校] ${review.notes}`]
+      }
+    }
+    if (blockingNotes.length === 0) {
+      clean = true
+      break
+    }
+  }
+  if (!writerOutput || !guardianOutput) throw new Error('Chapter cycle produced no draft')
+
+  const now = new Date().toISOString()
+  const existingPlan = base.entities.find(
+    (item) => item.collection === 'outline/chapters' && item.entity.id === chapterId
+  )?.entity
+  const changes: WorkshopChangeset = [
+    ...buildWriterChangeset(writerOutput, { proposalId, role: 'writer', now }, existingPlan),
+    ...buildPlannerChangeset(guardianOutput, { proposalId, role: 'guardian', now })
+  ]
+  const checkNote = clean
+    ? '\n[机检与审校通过]'
+    : `\n[质量关未全部通过,遗留问题待人工裁决]\n${blockingNotes.map((note) => `- ${note}`).join('\n')}`
+
+  signal.throwIfAborted()
+  await params.projectLock.runExclusive(rootPath, async () => {
+    signal.throwIfAborted()
+    const kernel = await WorkshopKernel.open(rootPath)
+    await kernel.createProposal({
+      id: proposalId,
+      title: writerOutput.title,
+      rationale: `${writerOutput.rationale}${checkNote}`,
+      origin: { kind: 'ai', role: 'writer', proposalId },
+      changes
+    })
+  })
+  return { proposalId, clean, recovered: false }
+}
+
 export function createWorkshopChapterCycleJobHandler(
   projectLock: KeyedMutex
 ): JobHandler<WorkshopChapterCycleJobPayload> {
@@ -85,122 +233,19 @@ export function createWorkshopChapterCycleJobHandler(
 
     async execute(ctx): Promise<WorkshopGenerationOutput> {
       ctx.signal.throwIfAborted()
-      const proposalId = ctx.jobId
-      const { rootPath, chapterId } = ctx.input
-
-      const base = await projectLock.runExclusive(rootPath, async () => {
-        const kernel = await WorkshopKernel.open(rootPath)
-        if (await kernel.proposalExists(proposalId)) return null
-        return collectWorkshopContext(kernel, { targetChapterId: chapterId })
+      const result = await produceChapterProposal({
+        rootPath: ctx.input.rootPath,
+        chapterId: ctx.input.chapterId,
+        instruction: ctx.input.instruction,
+        uniqueModelId: ctx.input.uniqueModelId,
+        proposalId: ctx.jobId,
+        review: ctx.input.review ?? true,
+        signal: ctx.signal,
+        projectLock,
+        reportStage: (stage, round) => ctx.reportProgress(Math.min(90, 10 + round * 25), { stage, round })
       })
-      if (base === null) {
-        ctx.reportProgress(100, { stage: 'completed', proposalId, recovered: true })
-        return WorkshopGenerationOutputSchema.parse({ proposalId })
-      }
-
-      const aiService = application.get('AiService')
-      const baselineErrorKeys = new Set(
-        runWorkshopInvariants(base)
-          .filter((finding) => finding.severity === 'error')
-          .map((finding) => finding.key)
-      )
-
-      const callWriter = async (instruction: string): Promise<WorkshopWriterOutput> => {
-        const prompt = buildWorkshopGenerationPrompt({
-          role: 'writer',
-          instruction: `${instruction}\n目标章节:${chapterId}`,
-          context: base
-        })
-        const { object } = await aiService.generateStructured(
-          {
-            uniqueModelId: ctx.input.uniqueModelId,
-            system: prompt.system,
-            prompt: prompt.prompt,
-            contextOwner: 'caller' as const,
-            requestOptions: { signal: ctx.signal, maxRetries: 0 }
-          },
-          WorkshopWriterOutputSchema,
-          { maxRepairAttempts: 1 }
-        )
-        return object
-      }
-
-      const callGuardian = async (draftContent: string): Promise<WorkshopGuardianOutput> => {
-        const prompt = buildWorkshopGenerationPrompt({
-          role: 'guardian',
-          instruction: `提取第 ${chapterId} 章草稿的台账更新`,
-          context: { ...base, targetChapter: { chapterId, content: draftContent } }
-        })
-        const { object } = await aiService.generateStructured(
-          {
-            uniqueModelId: ctx.input.uniqueModelId,
-            system: prompt.system,
-            prompt: prompt.prompt,
-            contextOwner: 'caller' as const,
-            requestOptions: { signal: ctx.signal, maxRetries: 0 }
-          },
-          WorkshopGuardianOutputSchema,
-          { maxRepairAttempts: 1 }
-        )
-        return object
-      }
-
-      let writerOutput: WorkshopWriterOutput | undefined
-      let guardianOutput: WorkshopGuardianOutput | undefined
-      let newErrors: WorkshopFinding[] = []
-      for (let round = 0; round <= MAX_REVISION_ROUNDS; round++) {
-        ctx.signal.throwIfAborted()
-        ctx.reportProgress(15 + round * 25, { stage: 'drafting', round: round + 1 })
-        const revisionNote =
-          newErrors.length > 0
-            ? `\n上一稿经确定性检查发现以下连续性错误,必须在新稿中消除:\n${newErrors.map((finding) => `- ${finding.detail}`).join('\n')}`
-            : ''
-        writerOutput = await callWriter(`${ctx.input.instruction}${revisionNote}`)
-        if (writerOutput.chapterId !== chapterId) writerOutput = { ...writerOutput, chapterId }
-
-        ctx.signal.throwIfAborted()
-        ctx.reportProgress(30 + round * 25, { stage: 'extracting', round: round + 1 })
-        guardianOutput = await callGuardian(writerOutput.content)
-        if (guardianOutput.chapterId !== chapterId) guardianOutput = { ...guardianOutput, chapterId }
-
-        const candidate = materializeCandidate(base, chapterId, guardianOutput, writerOutput.planStatus)
-        newErrors = runWorkshopInvariants(candidate).filter(
-          (finding) => finding.severity === 'error' && !baselineErrorKeys.has(finding.key)
-        )
-        if (newErrors.length === 0) break
-      }
-      if (!writerOutput || !guardianOutput) throw new Error('Chapter cycle produced no draft')
-
-      // 组装单一原子 changeset:正文 + 计划状态 + 台账更新。
-      const now = new Date().toISOString()
-      const existingPlan = base.entities.find(
-        (item) => item.collection === 'outline/chapters' && item.entity.id === chapterId
-      )?.entity
-      const changes: WorkshopChangeset = [
-        ...buildWriterChangeset(writerOutput, { proposalId, role: 'writer', now }, existingPlan),
-        ...buildPlannerChangeset(guardianOutput, { proposalId, role: 'guardian', now })
-      ]
-      const checkNote =
-        newErrors.length > 0
-          ? `\n[机检未通过,遗留 ${newErrors.length} 项错误待人工裁决]\n${newErrors.map((finding) => `- ${finding.detail}`).join('\n')}`
-          : '\n[机检通过:候选稿未引入新的连续性错误]'
-
-      ctx.signal.throwIfAborted()
-      ctx.reportProgress(90, { stage: 'persisting-proposal' })
-      await projectLock.runExclusive(rootPath, async () => {
-        ctx.signal.throwIfAborted()
-        const kernel = await WorkshopKernel.open(rootPath)
-        await kernel.createProposal({
-          id: proposalId,
-          title: writerOutput.title,
-          rationale: `${writerOutput.rationale}${checkNote}`,
-          origin: { kind: 'ai', role: 'writer', proposalId },
-          changes
-        })
-      })
-
-      ctx.reportProgress(100, { stage: 'completed', proposalId })
-      return WorkshopGenerationOutputSchema.parse({ proposalId })
+      ctx.reportProgress(100, { stage: 'completed', proposalId: result.proposalId, recovered: result.recovered })
+      return WorkshopGenerationOutputSchema.parse({ proposalId: result.proposalId })
     }
   }
 }

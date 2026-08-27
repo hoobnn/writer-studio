@@ -10,6 +10,8 @@ import {
   WorkshopEntityListResultSchema,
   WorkshopEntityReadInputSchema,
   WorkshopEntitySchema,
+  WorkshopExportInputSchema,
+  WorkshopExportResultSchema,
   WorkshopGenerationCancelResultSchema,
   WorkshopGenerationJobInputSchema,
   WorkshopGenerationStartInputSchema,
@@ -29,7 +31,8 @@ import {
   WorkshopRollbackInputSchema,
   WorkshopTimelineEntrySchema,
   WorkshopTimelineListInputSchema,
-  WorkshopTimelineListResultSchema
+  WorkshopTimelineListResultSchema,
+  WorkshopVolumeRunStartInputSchema
 } from '@shared/types/workshop'
 
 import { defineRoute } from '../define'
@@ -118,5 +121,13 @@ export const workshopRequestSchemas = {
   'workshop.cycle.start': defineRoute({
     input: WorkshopChapterCycleStartInputSchema,
     output: WorkshopGenerationStartResultSchema
+  }),
+  'workshop.volume.start': defineRoute({
+    input: WorkshopVolumeRunStartInputSchema,
+    output: WorkshopGenerationStartResultSchema
+  }),
+  'workshop.export': defineRoute({
+    input: WorkshopExportInputSchema,
+    output: WorkshopExportResultSchema
   })
 }

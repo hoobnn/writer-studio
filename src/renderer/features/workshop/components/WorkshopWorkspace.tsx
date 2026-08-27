@@ -14,6 +14,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { WorkshopDiscussionPanel } from './WorkshopDiscussionPanel'
+import { WorkshopEntityEditor } from './WorkshopEntityEditor'
 import { WorkshopGeneratePanel } from './WorkshopGeneratePanel'
 import { WorkshopInvariantPanel } from './WorkshopInvariantPanel'
 import { WorkshopProposalPanel } from './WorkshopProposalPanel'
@@ -49,6 +50,7 @@ export function WorkshopWorkspace({ snapshot, onRefreshSnapshot, onClose }: Work
   const [chapterBaseline, setChapterBaseline] = useState('')
   const [busy, setBusy] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const [exportMessage, setExportMessage] = useState('')
 
   const loadSideData = useCallback(async () => {
     const [entityResults, proposalResult, timelineResult] = await Promise.all([
@@ -213,6 +215,32 @@ export function WorkshopWorkspace({ snapshot, onRefreshSnapshot, onClose }: Work
             )
           })}
         </div>
+        <div className="border-border border-t p-2">
+          <div className="mb-1 px-1 font-medium text-muted-foreground text-xs uppercase">
+            {t('workshop.export.title')}
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {(['markdown', 'txt', 'epub', 'docx'] as const).map((format) => (
+              <Button
+                key={format}
+                type="button"
+                size="sm"
+                variant="ghost"
+                disabled={busy}
+                onClick={() =>
+                  void runAction('workshop.export.failed_prefix', async () => {
+                    const { filePath } = await ipcApi.request('workshop.export', { rootPath, format })
+                    setExportMessage(filePath ? t('workshop.export.saved_to', { path: filePath }) : '')
+                  })
+                }>
+                {format.toUpperCase()}
+              </Button>
+            ))}
+          </div>
+          {exportMessage ? (
+            <p className="mt-1 break-all px-1 text-muted-foreground text-xs leading-4">{exportMessage}</p>
+          ) : null}
+        </div>
       </aside>
 
       <main className="flex min-w-0 flex-1 flex-col">
@@ -237,19 +265,19 @@ export function WorkshopWorkspace({ snapshot, onRefreshSnapshot, onClose }: Work
             />
           </div>
         ) : selection?.type === 'entity' && selectedEntity ? (
-          <div className="min-h-0 flex-1 overflow-y-auto p-4">
-            <div className="mb-3 flex items-center gap-2">
-              <h2 className="font-medium text-base">{selectedEntity.id}</h2>
-              <Badge variant="outline">
-                {selectedEntity.origin.kind === 'human'
-                  ? t('workshop.entity.origin_human')
-                  : t('workshop.entity.origin_ai')}
-              </Badge>
-            </div>
-            <pre className="overflow-x-auto rounded-lg border border-border bg-card p-4 text-sm leading-6">
-              {JSON.stringify(selectedEntity.data, null, 2)}
-            </pre>
-          </div>
+          <WorkshopEntityEditor
+            rootPath={rootPath}
+            collection={selection.collection}
+            entity={selectedEntity}
+            busy={busy}
+            onMutate={(errorKey, action) =>
+              runAction(errorKey, async () => {
+                await action()
+                await refreshAll()
+              })
+            }
+            onRefresh={refreshAll}
+          />
         ) : (
           <div className="flex flex-1 items-center justify-center text-muted-foreground text-sm">
             {t('workshop.workspace.select_prompt')}

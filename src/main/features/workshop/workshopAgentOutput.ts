@@ -88,6 +88,22 @@ export const WorkshopWriterOutputSchema = z.strictObject({
 })
 export type WorkshopWriterOutput = z.infer<typeof WorkshopWriterOutputSchema>
 
+/** 审校输出:结构化判定 + 发现列表。verdict 为 revise 时循环携带发现重写。 */
+export const WorkshopReviewerOutputSchema = z.strictObject({
+  verdict: z.enum(['pass', 'revise']),
+  notes: z.string().max(4_000).default(''),
+  findings: z
+    .array(
+      z.strictObject({
+        severity: z.enum(['error', 'warning']),
+        detail: z.string().trim().min(1).max(2_000)
+      })
+    )
+    .max(50)
+    .default([])
+})
+export type WorkshopReviewerOutput = z.infer<typeof WorkshopReviewerOutputSchema>
+
 export const WorkshopDiscussionActionSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('plan'), proposal: WorkshopPlannerOutputSchema }),
   z.strictObject({ kind: z.literal('draft'), proposal: WorkshopWriterOutputSchema })
