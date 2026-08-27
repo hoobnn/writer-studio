@@ -238,6 +238,16 @@ export const COMMAND_DEFINITIONS = [
     }
   }),
   defineCommand({
+    id: 'workshop.save',
+    titleKey: 'settings.shortcuts.workshop_save',
+    categoryKey: 'settings.shortcuts.general',
+    scope: 'renderer',
+    keybinding: {
+      defaultBinding: ['CommandOrControl', 'S'],
+      when: 'workshop.editor_active'
+    }
+  }),
+  defineCommand({
     id: 'tab.next',
     titleKey: 'settings.shortcuts.next_tab',
     categoryKey: 'settings.shortcuts.general',

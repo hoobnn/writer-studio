@@ -670,6 +670,8 @@ vi.mock('@cherrystudio/ui', () => {
     FieldGroup: ({ children, ...props }) =>
       React.createElement('div', { ...props, 'data-slot': 'field-group' }, children),
     Field: ({ children, ...props }) => React.createElement('div', { ...props, 'data-slot': 'field' }, children),
+    FieldDescription: ({ children, ...props }) => React.createElement('p', { ...props }, children),
+    SearchInput: ({ onClear, clearLabel, ...props }) => React.createElement('input', { type: 'search', ...props }),
     FieldLabel: ({ children, ...props }) => React.createElement('label', { ...props }, children),
     MenuItem: ({ active, children, icon, label, labelClassName, onClick, suffix, ...props }) =>
       React.createElement(

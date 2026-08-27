@@ -375,6 +375,12 @@ export type RendererPersistCacheSchema = {
   'ui.writer.last_project_root': string | null
   // Most recently opened Workshop project (target-architecture successor of Writer).
   'ui.workshop.last_project_root': string | null
+  // Workshop workspace panel sizes keyed by panel id (nav/main/rail); null until first drag.
+  'ui.workshop.panel_layout': Record<string, number> | null
+  // Expanded nav accordion group ids; empty array = everything collapsed.
+  'ui.workshop.nav_expanded': string[]
+  'ui.workshop.rail_tab': 'discussion' | 'proposals' | 'invariants' | 'timeline'
+  'ui.workshop.active_job_ids': CacheValueTypes.WorkshopActiveJobMap
   // Fixed maps keyed by a JSON-encoded [rootPath, chapterId] tuple. Drafts are
   // recovery-only and never replace the project folder as the source of truth.
   'ui.writer.recovery_drafts': CacheValueTypes.WriterRecoveryDraftMap
@@ -443,6 +449,10 @@ export const DefaultRendererPersistCache: RendererPersistCacheSchema = {
   'ui.sidebar.width': 50, // keep in sync with SIDEBAR_ICON_WIDTH (renderer Sidebar/constants.ts)
   'ui.writer.last_project_root': null,
   'ui.workshop.last_project_root': null,
+  'ui.workshop.panel_layout': null,
+  'ui.workshop.nav_expanded': ['chapters', 'codex', 'outline', 'ledger'],
+  'ui.workshop.rail_tab': 'discussion',
+  'ui.workshop.active_job_ids': {},
   'ui.writer.recovery_drafts': {},
   'ui.writer.active_job_ids': {},
   'ui.chat.sidebar.width': 275,

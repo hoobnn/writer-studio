@@ -92,6 +92,8 @@ export interface WriterActiveJobEntry {
   updatedAt: string
 }
 export type WriterActiveJobMap = Record<string, WriterActiveJobEntry>
+/** Keyed by JSON-encoded [rootPath, domain]; entry shape shared with Writer jobs. */
+export type WorkshopActiveJobMap = Record<string, WriterActiveJobEntry>
 
 export interface TabsState {
   tabs: Tab[]

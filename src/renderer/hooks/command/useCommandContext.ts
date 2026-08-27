@@ -11,6 +11,7 @@ export type RendererCommandContextKey =
   | 'topic.exists'
   | 'input.composing'
   | 'webview.focused'
+  | 'workshop.editor_active'
 
 export type RegisterContextKey = (key: RendererCommandContextKey, value: ContextValue) => () => void
 
