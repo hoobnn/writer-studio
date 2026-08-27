@@ -55,5 +55,7 @@ export const workshopHandlers: IpcHandlersFor<typeof workshopRequestSchemas> = {
   'workshop.discussion.send': async (input) =>
     exposeWorkshopError(() => application.get('WorkshopService').sendDiscussionMessage(input)),
   'workshop.invariants.run': async (input) =>
-    exposeWorkshopError(() => application.get('WorkshopService').runInvariants(input))
+    exposeWorkshopError(() => application.get('WorkshopService').runInvariants(input)),
+  'workshop.cycle.start': async (input) =>
+    exposeWorkshopError(() => application.get('WorkshopService').startChapterCycle(input))
 }

@@ -10,6 +10,7 @@ import { KeyedMutex } from '@main/core/concurrency/KeyedMutex'
 import { BaseService, DependsOn, Injectable, Phase, ServicePhase } from '@main/core/lifecycle'
 import type {
   WorkshopCanonCommitInput,
+  WorkshopChapterCycleStartInput,
   WorkshopChapterReadInput,
   WorkshopChapterReadResult,
   WorkshopDiscussionListInput,
@@ -39,6 +40,7 @@ import type {
   WorkshopTimelineListResult
 } from '@shared/types/workshop'
 
+import { createWorkshopChapterCycleJobHandler } from './workshopChapterCycleJobHandler'
 import { collectWorkshopContext } from './workshopContext'
 import { createWorkshopDiscussionJobHandler } from './workshopDiscussionJobHandler'
 import { appendDiscussionMessage, readDiscussion } from './workshopDiscussionStore'
@@ -75,6 +77,7 @@ export class WorkshopService extends BaseService {
     const jobManager = application.get('JobManager')
     jobManager.registerHandler('workshop.generate-proposal', createWorkshopGenerationJobHandler(this.projectLock))
     jobManager.registerHandler('workshop.discussion-turn', createWorkshopDiscussionJobHandler(this.projectLock))
+    jobManager.registerHandler('workshop.chapter-cycle', createWorkshopChapterCycleJobHandler(this.projectLock))
   }
 
   private async canonicalRoot(rootPath: string): Promise<string> {
@@ -175,12 +178,17 @@ export class WorkshopService extends BaseService {
   async applyProposal(input: WorkshopProposalReadInput): Promise<WorkshopTimelineEntry> {
     const { entry, guardianChapterIds } = await this.withProject(input.rootPath, async (kernel) => {
       const proposal = await kernel.readProposal(input.id)
-      const changedChapterIds =
-        proposal.status === 'pending' && proposal.origin.role !== 'guardian'
-          ? (await kernel.readProposalChanges(input.id))
-              .map((change) => /^manuscript\/(.+)\.md$/.exec(change.filepath)?.[1])
-              .filter((chapterId): chapterId is string => Boolean(chapterId))
-          : []
+      let changedChapterIds: string[] = []
+      if (proposal.status === 'pending' && proposal.origin.role !== 'guardian') {
+        const changedFiles = await kernel.readProposalChanges(input.id)
+        // 成章循环等提案自带台账更新;此时正文反哺已完成,不再触发守卫。
+        const includesLedger = changedFiles.some((change) => change.filepath.startsWith('ledger/'))
+        if (!includesLedger) {
+          changedChapterIds = changedFiles
+            .map((change) => /^manuscript\/(.+)\.md$/.exec(change.filepath)?.[1])
+            .filter((chapterId): chapterId is string => Boolean(chapterId))
+        }
+      }
       return { entry: await kernel.applyProposal(input.id), guardianChapterIds: changedChapterIds }
     })
     // 正文反哺:章节入正史后自动入队守卫任务,产出台账更新提案(仍过人类评审关)。
@@ -260,7 +268,22 @@ export class WorkshopService extends BaseService {
   }
 
   private isWorkshopJob(type: string): boolean {
-    return type === 'workshop.generate-proposal' || type === 'workshop.discussion-turn'
+    return (
+      type === 'workshop.generate-proposal' || type === 'workshop.discussion-turn' || type === 'workshop.chapter-cycle'
+    )
+  }
+
+  async startChapterCycle(input: WorkshopChapterCycleStartInput): Promise<WorkshopGenerationStartResult> {
+    const root = await this.canonicalRoot(input.rootPath)
+    await WorkshopKernel.open(root)
+    const uniqueModelId = this.resolveGenerationModel(input.uniqueModelId)
+    const handle = application.get('JobManager').enqueue('workshop.chapter-cycle', {
+      rootPath: root,
+      chapterId: input.chapterId,
+      instruction: input.instruction,
+      uniqueModelId
+    })
+    return handle.snapshot
   }
 
   async runInvariants(input: WorkshopInvariantRunInput): Promise<WorkshopInvariantReport> {

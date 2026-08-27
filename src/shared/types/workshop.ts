@@ -421,6 +421,14 @@ export type WorkshopGenerationStartInput = z.infer<typeof WorkshopGenerationStar
 export const WorkshopGenerationStartResultSchema = JobSnapshotSchema
 export type WorkshopGenerationStartResult = JobSnapshot
 
+export const WorkshopChapterCycleStartInputSchema = z.strictObject({
+  rootPath: z.string().trim().min(1),
+  chapterId: WorkshopIdSchema,
+  instruction: z.string().trim().min(1).max(20_000),
+  uniqueModelId: UniqueModelIdSchema.optional()
+})
+export type WorkshopChapterCycleStartInput = z.infer<typeof WorkshopChapterCycleStartInputSchema>
+
 export const WorkshopGenerationJobInputSchema = z.strictObject({ jobId: z.string().trim().min(1) })
 export type WorkshopGenerationJobInput = z.infer<typeof WorkshopGenerationJobInputSchema>
 

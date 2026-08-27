@@ -1,5 +1,6 @@
 import {
   WorkshopCanonCommitInputSchema,
+  WorkshopChapterCycleStartInputSchema,
   WorkshopChapterReadInputSchema,
   WorkshopChapterReadResultSchema,
   WorkshopDiscussionListInputSchema,
@@ -113,5 +114,9 @@ export const workshopRequestSchemas = {
   'workshop.invariants.run': defineRoute({
     input: WorkshopInvariantRunInputSchema,
     output: WorkshopInvariantReportSchema
+  }),
+  'workshop.cycle.start': defineRoute({
+    input: WorkshopChapterCycleStartInputSchema,
+    output: WorkshopGenerationStartResultSchema
   })
 }

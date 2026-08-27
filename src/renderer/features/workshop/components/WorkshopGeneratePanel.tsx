@@ -16,7 +16,7 @@ const POLL_INTERVAL_MS = 2_000
 
 export function WorkshopGeneratePanel({ rootPath, selectedChapterId, onProposalArrived }: WorkshopGeneratePanelProps) {
   const { t } = useTranslation()
-  const [role, setRole] = useState<'planner' | 'writer' | 'guardian'>('planner')
+  const [role, setRole] = useState<'planner' | 'writer' | 'guardian' | 'cycle'>('planner')
   const [instruction, setInstruction] = useState('')
   const [jobId, setJobId] = useState<string>()
   const [errorMessage, setErrorMessage] = useState('')
@@ -60,12 +60,19 @@ export function WorkshopGeneratePanel({ rootPath, selectedChapterId, onProposalA
     if (!normalized) return
     setErrorMessage('')
     try {
-      const snapshot = await ipcApi.request('workshop.generation.start', {
-        rootPath,
-        role,
-        instruction: normalized,
-        ...(role !== 'planner' && selectedChapterId ? { chapterId: selectedChapterId } : {})
-      })
+      const snapshot =
+        role === 'cycle'
+          ? await ipcApi.request('workshop.cycle.start', {
+              rootPath,
+              chapterId: selectedChapterId ?? '',
+              instruction: normalized
+            })
+          : await ipcApi.request('workshop.generation.start', {
+              rootPath,
+              role,
+              instruction: normalized,
+              ...(role !== 'planner' && selectedChapterId ? { chapterId: selectedChapterId } : {})
+            })
       setJobId(snapshot.id)
     } catch (error) {
       setErrorMessage(formatErrorMessageWithPrefix(error, t('workshop.generate.failed')))
@@ -81,13 +88,14 @@ export function WorkshopGeneratePanel({ rootPath, selectedChapterId, onProposalA
   return (
     <div className="space-y-2 border-border border-b p-3">
       <div className="flex items-center gap-1">
-        {(['planner', 'writer', 'guardian'] as const).map((candidate) => (
+        {(['planner', 'writer', 'guardian', 'cycle'] as const).map((candidate) => (
           <Button
             key={candidate}
             type="button"
             size="sm"
             variant={role === candidate ? 'secondary' : 'ghost'}
-            disabled={running}
+            disabled={running || (candidate === 'cycle' && !selectedChapterId)}
+            title={candidate === 'cycle' && !selectedChapterId ? t('workshop.generate.cycle_needs_chapter') : undefined}
             onClick={() => setRole(candidate)}>
             {t(`workshop.generate.role_${candidate}`)}
           </Button>
@@ -119,7 +127,11 @@ export function WorkshopGeneratePanel({ rootPath, selectedChapterId, onProposalA
             {t('workshop.generate.cancel')}
           </Button>
         ) : (
-          <Button type="button" size="sm" disabled={!instruction.trim()} onClick={() => void start()}>
+          <Button
+            type="button"
+            size="sm"
+            disabled={!instruction.trim() || (role === 'cycle' && !selectedChapterId)}
+            onClick={() => void start()}>
             <Sparkles className="size-3.5" aria-hidden />
             {t('workshop.generate.start')}
           </Button>
