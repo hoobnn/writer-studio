@@ -16,8 +16,9 @@ import {
   WorkshopPlannerOutputSchema,
   WorkshopWriterOutputSchema
 } from './workshopAgentOutput'
+import { collectWorkshopContext } from './workshopContext'
 import { WorkshopKernel } from './WorkshopKernel'
-import { buildWorkshopGenerationPrompt, type WorkshopContextData } from './workshopPrompts'
+import { buildWorkshopGenerationPrompt } from './workshopPrompts'
 
 declare module '@main/core/job/jobRegistry' {
   interface JobRegistry {
@@ -54,29 +55,9 @@ export function createWorkshopGenerationJobHandler(projectLock: KeyedMutex): Job
         const kernel = await WorkshopKernel.open(ctx.input.rootPath)
         if (await kernel.proposalExists(proposalId)) return null
 
-        const card = await kernel.readProjectCard()
-        const chapterIds = await kernel.listChapterIds()
-        const entities: WorkshopContextData['entities'] = []
-        for (const collection of [
-          'codex/rules',
-          'codex/characters',
-          'outline/volumes',
-          'outline/arcs',
-          'outline/chapters',
-          'codex/lore',
-          'ledger/foreshadowing',
-          'ledger/facts',
-          'ledger/summaries',
-          'ledger/states',
-          'ledger/events'
-        ] as const) {
-          for (const entity of await kernel.listEntities(collection)) entities.push({ collection, entity })
-        }
-        let targetChapter: WorkshopContextData['targetChapter']
-        if (ctx.input.role === 'writer' && ctx.input.chapterId && chapterIds.includes(ctx.input.chapterId)) {
-          targetChapter = { chapterId: ctx.input.chapterId, content: await kernel.readChapter(ctx.input.chapterId) }
-        }
-        return { card, chapterIds, entities, targetChapter } satisfies WorkshopContextData
+        return collectWorkshopContext(kernel, {
+          targetChapterId: ctx.input.role === 'writer' ? ctx.input.chapterId : undefined
+        })
       })
       if (context === null) {
         ctx.reportProgress(100, { stage: 'completed', proposalId, recovered: true })

@@ -13,6 +13,7 @@ import { FileText, X } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { WorkshopDiscussionPanel } from './WorkshopDiscussionPanel'
 import { WorkshopGeneratePanel } from './WorkshopGeneratePanel'
 import { WorkshopProposalPanel } from './WorkshopProposalPanel'
 import { WorkshopTimelinePanel } from './WorkshopTimelinePanel'
@@ -256,8 +257,9 @@ export function WorkshopWorkspace({ snapshot, onRefreshSnapshot, onClose }: Work
       </main>
 
       <aside className="flex w-96 shrink-0 flex-col border-border border-l">
-        <Tabs defaultValue="proposals" className="flex min-h-0 flex-1 flex-col">
+        <Tabs defaultValue="discussion" className="flex min-h-0 flex-1 flex-col">
           <TabsList className="w-full justify-start rounded-none border-border border-b bg-transparent px-2">
+            <TabsTrigger value="discussion">{t('workshop.discussion.title')}</TabsTrigger>
             <TabsTrigger value="proposals">
               {t('workshop.proposals.title')}
               {proposals.filter((proposal) => proposal.status === 'pending').length > 0 ? (
@@ -266,6 +268,9 @@ export function WorkshopWorkspace({ snapshot, onRefreshSnapshot, onClose }: Work
             </TabsTrigger>
             <TabsTrigger value="timeline">{t('workshop.timeline.title')}</TabsTrigger>
           </TabsList>
+          <TabsContent value="discussion" className="flex min-h-0 flex-1 flex-col">
+            <WorkshopDiscussionPanel rootPath={rootPath} onTurnFinished={refreshAll} />
+          </TabsContent>
           <TabsContent value="proposals" className="flex min-h-0 flex-1 flex-col">
             <WorkshopGeneratePanel rootPath={rootPath} onProposalArrived={refreshAll} />
             <WorkshopProposalPanel

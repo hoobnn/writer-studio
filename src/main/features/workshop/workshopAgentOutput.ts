@@ -51,6 +51,18 @@ export const WorkshopWriterOutputSchema = z.strictObject({
 })
 export type WorkshopWriterOutput = z.infer<typeof WorkshopWriterOutputSchema>
 
+export const WorkshopDiscussionActionSchema = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('plan'), proposal: WorkshopPlannerOutputSchema }),
+  z.strictObject({ kind: z.literal('draft'), proposal: WorkshopWriterOutputSchema })
+])
+export type WorkshopDiscussionAction = z.infer<typeof WorkshopDiscussionActionSchema>
+
+export const WorkshopDiscussionOutputSchema = z.strictObject({
+  reply: z.string().trim().min(1).max(20_000),
+  action: WorkshopDiscussionActionSchema.optional()
+})
+export type WorkshopDiscussionOutput = z.infer<typeof WorkshopDiscussionOutputSchema>
+
 interface BuildChangesetInput {
   proposalId: string
   role: 'planner' | 'writer'

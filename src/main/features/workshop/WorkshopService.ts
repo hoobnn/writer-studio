@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -10,6 +11,9 @@ import type {
   WorkshopCanonCommitInput,
   WorkshopChapterReadInput,
   WorkshopChapterReadResult,
+  WorkshopDiscussionListInput,
+  WorkshopDiscussionListResult,
+  WorkshopDiscussionSendInput,
   WorkshopEntity,
   WorkshopEntityListInput,
   WorkshopEntityListResult,
@@ -32,6 +36,8 @@ import type {
   WorkshopTimelineListResult
 } from '@shared/types/workshop'
 
+import { createWorkshopDiscussionJobHandler } from './workshopDiscussionJobHandler'
+import { appendDiscussionMessage, readDiscussion } from './workshopDiscussionStore'
 import { WorkshopError, workshopErrorCodes } from './workshopErrors'
 import { createWorkshopGenerationJobHandler } from './workshopGenerationJobHandler'
 import { WorkshopKernel } from './WorkshopKernel'
@@ -59,9 +65,9 @@ export class WorkshopService extends BaseService {
   private readonly projectLock = new KeyedMutex()
 
   protected onInit(): void {
-    application
-      .get('JobManager')
-      .registerHandler('workshop.generate-proposal', createWorkshopGenerationJobHandler(this.projectLock))
+    const jobManager = application.get('JobManager')
+    jobManager.registerHandler('workshop.generate-proposal', createWorkshopGenerationJobHandler(this.projectLock))
+    jobManager.registerHandler('workshop.discussion-turn', createWorkshopDiscussionJobHandler(this.projectLock))
   }
 
   private async canonicalRoot(rootPath: string): Promise<string> {
@@ -174,12 +180,10 @@ export class WorkshopService extends BaseService {
     return this.withProject(input.rootPath, async (kernel) => ({ entries: await kernel.timeline(input.limit) }))
   }
 
-  async startGeneration(input: WorkshopGenerationStartInput): Promise<WorkshopGenerationStartResult> {
-    const root = await this.canonicalRoot(input.rootPath)
-    await WorkshopKernel.open(root)
-    const uniqueModelId = resolveWorkshopGenerationModel(
+  private resolveGenerationModel(explicit: string | undefined) {
+    return resolveWorkshopGenerationModel(
       {
-        explicit: input.uniqueModelId,
+        explicit,
         configuredDefault:
           application.get('PreferenceService').get('feature.quick_assistant.model_id') ??
           application.get('PreferenceService').get('chat.default_model_id')
@@ -189,6 +193,12 @@ export class WorkshopService extends BaseService {
         getModel: (providerId, modelId) => modelService.getByKey(providerId, modelId)
       }
     )
+  }
+
+  async startGeneration(input: WorkshopGenerationStartInput): Promise<WorkshopGenerationStartResult> {
+    const root = await this.canonicalRoot(input.rootPath)
+    await WorkshopKernel.open(root)
+    const uniqueModelId = this.resolveGenerationModel(input.uniqueModelId)
     const handle = application.get('JobManager').enqueue('workshop.generate-proposal', {
       rootPath: root,
       role: input.role,
@@ -201,15 +211,39 @@ export class WorkshopService extends BaseService {
 
   async generationStatus(jobId: string): Promise<WorkshopGenerationStatusResult> {
     const snapshot = await application.get('JobManager').get(jobId)
-    if (!snapshot || snapshot.type !== 'workshop.generate-proposal') return null
+    if (!snapshot || !this.isWorkshopJob(snapshot.type)) return null
     return snapshot
   }
 
   async cancelGeneration(jobId: string): Promise<WorkshopGenerationCancelResult> {
     const jobManager = application.get('JobManager')
     const snapshot = await jobManager.get(jobId)
-    if (!snapshot || snapshot.type !== 'workshop.generate-proposal') return { cancelled: false }
+    if (!snapshot || !this.isWorkshopJob(snapshot.type)) return { cancelled: false }
     const result = await jobManager.cancel(jobId, 'Cancelled by workshop')
     return { cancelled: result.outcome === 'cancelled' }
+  }
+
+  private isWorkshopJob(type: string): boolean {
+    return type === 'workshop.generate-proposal' || type === 'workshop.discussion-turn'
+  }
+
+  async listDiscussion(input: WorkshopDiscussionListInput): Promise<WorkshopDiscussionListResult> {
+    return this.withProject(input.rootPath, async (kernel) => ({ messages: await readDiscussion(kernel.rootPath) }))
+  }
+
+  async sendDiscussionMessage(input: WorkshopDiscussionSendInput): Promise<WorkshopGenerationStartResult> {
+    const root = await this.canonicalRoot(input.rootPath)
+    const uniqueModelId = this.resolveGenerationModel(input.uniqueModelId)
+    await this.projectLock.runExclusive(root, async () => {
+      await WorkshopKernel.open(root)
+      await appendDiscussionMessage(root, {
+        id: randomUUID(),
+        role: 'user',
+        content: input.content,
+        createdAt: new Date().toISOString()
+      })
+    })
+    const handle = application.get('JobManager').enqueue('workshop.discussion-turn', { rootPath: root, uniqueModelId })
+    return handle.snapshot
   }
 }

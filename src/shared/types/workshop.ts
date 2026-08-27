@@ -433,6 +433,31 @@ export type WorkshopGenerationCancelResult = z.infer<typeof WorkshopGenerationCa
 export const WorkshopGenerationOutputSchema = z.strictObject({ proposalId: WorkshopIdSchema })
 export type WorkshopGenerationOutput = z.infer<typeof WorkshopGenerationOutputSchema>
 
+export const WorkshopDiscussionMessageSchema = z.strictObject({
+  id: WorkshopIdSchema,
+  role: z.enum(['user', 'assistant']),
+  content: z.string().min(1).max(50_000),
+  createdAt: WorkshopTimestampSchema,
+  /** 助手消息在本回合落盘的提案(讨论即操作的溯源锚点)。 */
+  proposalId: WorkshopIdSchema.optional()
+})
+export type WorkshopDiscussionMessage = z.infer<typeof WorkshopDiscussionMessageSchema>
+
+export const WorkshopDiscussionListInputSchema = z.strictObject({ rootPath: z.string().trim().min(1) })
+export type WorkshopDiscussionListInput = z.infer<typeof WorkshopDiscussionListInputSchema>
+
+export const WorkshopDiscussionListResultSchema = z.strictObject({
+  messages: z.array(WorkshopDiscussionMessageSchema).max(500)
+})
+export type WorkshopDiscussionListResult = z.infer<typeof WorkshopDiscussionListResultSchema>
+
+export const WorkshopDiscussionSendInputSchema = z.strictObject({
+  rootPath: z.string().trim().min(1),
+  content: z.string().trim().min(1).max(20_000),
+  uniqueModelId: UniqueModelIdSchema.optional()
+})
+export type WorkshopDiscussionSendInput = z.infer<typeof WorkshopDiscussionSendInputSchema>
+
 export const WorkshopRollbackInputSchema = z.strictObject({
   rootPath: z.string().trim().min(1),
   commit: WorkshopCommitOidSchema

@@ -49,5 +49,9 @@ export const workshopHandlers: IpcHandlersFor<typeof workshopRequestSchemas> = {
   'workshop.generation.status': async ({ jobId }) =>
     exposeWorkshopError(() => application.get('WorkshopService').generationStatus(jobId)),
   'workshop.generation.cancel': async ({ jobId }) =>
-    exposeWorkshopError(() => application.get('WorkshopService').cancelGeneration(jobId))
+    exposeWorkshopError(() => application.get('WorkshopService').cancelGeneration(jobId)),
+  'workshop.discussion.list': async (input) =>
+    exposeWorkshopError(() => application.get('WorkshopService').listDiscussion(input)),
+  'workshop.discussion.send': async (input) =>
+    exposeWorkshopError(() => application.get('WorkshopService').sendDiscussionMessage(input))
 }

@@ -2,6 +2,9 @@ import {
   WorkshopCanonCommitInputSchema,
   WorkshopChapterReadInputSchema,
   WorkshopChapterReadResultSchema,
+  WorkshopDiscussionListInputSchema,
+  WorkshopDiscussionListResultSchema,
+  WorkshopDiscussionSendInputSchema,
   WorkshopEntityListInputSchema,
   WorkshopEntityListResultSchema,
   WorkshopEntityReadInputSchema,
@@ -96,5 +99,13 @@ export const workshopRequestSchemas = {
   'workshop.generation.cancel': defineRoute({
     input: WorkshopGenerationJobInputSchema,
     output: WorkshopGenerationCancelResultSchema
+  }),
+  'workshop.discussion.list': defineRoute({
+    input: WorkshopDiscussionListInputSchema,
+    output: WorkshopDiscussionListResultSchema
+  }),
+  'workshop.discussion.send': defineRoute({
+    input: WorkshopDiscussionSendInputSchema,
+    output: WorkshopGenerationStartResultSchema
   })
 }
