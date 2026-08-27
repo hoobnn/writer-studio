@@ -1,0 +1,107 @@
+import {
+  WORKSHOP_COLLECTION_DATA_SCHEMAS,
+  WORKSHOP_COLLECTIONS,
+  WORKSHOP_MAX_CHAPTER_CHARS,
+  WORKSHOP_SCHEMA_VERSION,
+  type WorkshopChange,
+  type WorkshopChangeset,
+  type WorkshopCollection,
+  WorkshopCollectionSchema,
+  type WorkshopEntity,
+  WorkshopIdSchema
+} from '@shared/types/workshop'
+import * as z from 'zod'
+
+/**
+ * 编辑部角色的模型输出契约。信封字段(origin/updatedAt/schemaVersion)不进模型输出,
+ * 由映射层统一补齐 —— 模型只负责领域内容。
+ */
+
+const entityWriteVariants = WORKSHOP_COLLECTIONS.map((collection) =>
+  z.strictObject({
+    collection: z.literal(collection),
+    id: WorkshopIdSchema,
+    data: WORKSHOP_COLLECTION_DATA_SCHEMAS[collection]
+  })
+)
+
+export const WorkshopEntityWriteOutputSchema = z.discriminatedUnion(
+  'collection',
+  entityWriteVariants as unknown as [(typeof entityWriteVariants)[number], ...typeof entityWriteVariants]
+)
+export type WorkshopEntityWriteOutput = z.infer<typeof WorkshopEntityWriteOutputSchema>
+
+export const WorkshopPlannerOutputSchema = z.strictObject({
+  title: z.string().trim().min(1).max(200),
+  rationale: z.string().max(20_000).default(''),
+  entities: z.array(WorkshopEntityWriteOutputSchema).min(1).max(100),
+  removals: z
+    .array(z.strictObject({ collection: WorkshopCollectionSchema, id: WorkshopIdSchema }))
+    .max(50)
+    .default([])
+})
+export type WorkshopPlannerOutput = z.infer<typeof WorkshopPlannerOutputSchema>
+
+export const WorkshopWriterOutputSchema = z.strictObject({
+  title: z.string().trim().min(1).max(200),
+  rationale: z.string().max(20_000).default(''),
+  chapterId: WorkshopIdSchema,
+  content: z.string().min(1).max(WORKSHOP_MAX_CHAPTER_CHARS),
+  planStatus: z.enum(['drafted', 'revised']).optional()
+})
+export type WorkshopWriterOutput = z.infer<typeof WorkshopWriterOutputSchema>
+
+interface BuildChangesetInput {
+  proposalId: string
+  role: 'planner' | 'writer'
+  now: string
+}
+
+function entityEnvelope(input: BuildChangesetInput, id: string, data: unknown): WorkshopEntity {
+  return {
+    schemaVersion: WORKSHOP_SCHEMA_VERSION,
+    id,
+    origin: { kind: 'ai', role: input.role, proposalId: input.proposalId },
+    updatedAt: input.now,
+    data
+  }
+}
+
+/** 策划输出 → changeset:同一实体多次出现取最后一次;同时出现写与删时删除优先剔除写。 */
+export function buildPlannerChangeset(output: WorkshopPlannerOutput, input: BuildChangesetInput): WorkshopChangeset {
+  const key = (collection: WorkshopCollection, id: string) => `${collection}/${id}`
+  const writes = new Map<string, WorkshopChange>()
+  for (const entity of output.entities) {
+    writes.set(key(entity.collection, entity.id), {
+      op: 'write_entity',
+      collection: entity.collection,
+      id: entity.id,
+      entity: entityEnvelope(input, entity.id, entity.data)
+    })
+  }
+  const removals: WorkshopChange[] = []
+  for (const removal of output.removals) {
+    writes.delete(key(removal.collection, removal.id))
+    removals.push({ op: 'delete_entity', collection: removal.collection, id: removal.id })
+  }
+  return [...writes.values(), ...removals]
+}
+
+/** 写手输出 → changeset:正文写入,可选地把既有章计划的 status 推进。 */
+export function buildWriterChangeset(
+  output: WorkshopWriterOutput,
+  input: BuildChangesetInput,
+  existingPlan: WorkshopEntity | undefined
+): WorkshopChangeset {
+  const changes: WorkshopChange[] = [{ op: 'write_chapter', chapterId: output.chapterId, content: output.content }]
+  if (output.planStatus && existingPlan) {
+    const planData = existingPlan.data as Record<string, unknown>
+    changes.push({
+      op: 'write_entity',
+      collection: 'outline/chapters',
+      id: output.chapterId,
+      entity: entityEnvelope(input, output.chapterId, { ...planData, status: output.planStatus })
+    })
+  }
+  return changes
+}

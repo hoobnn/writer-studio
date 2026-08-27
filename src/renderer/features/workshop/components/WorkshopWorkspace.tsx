@@ -13,6 +13,7 @@ import { FileText, X } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { WorkshopGeneratePanel } from './WorkshopGeneratePanel'
 import { WorkshopProposalPanel } from './WorkshopProposalPanel'
 import { WorkshopTimelinePanel } from './WorkshopTimelinePanel'
 
@@ -266,6 +267,7 @@ export function WorkshopWorkspace({ snapshot, onRefreshSnapshot, onClose }: Work
             <TabsTrigger value="timeline">{t('workshop.timeline.title')}</TabsTrigger>
           </TabsList>
           <TabsContent value="proposals" className="flex min-h-0 flex-1 flex-col">
+            <WorkshopGeneratePanel rootPath={rootPath} onProposalArrived={refreshAll} />
             <WorkshopProposalPanel
               rootPath={rootPath}
               proposals={proposals}

@@ -6,6 +6,11 @@ import {
   WorkshopEntityListResultSchema,
   WorkshopEntityReadInputSchema,
   WorkshopEntitySchema,
+  WorkshopGenerationCancelResultSchema,
+  WorkshopGenerationJobInputSchema,
+  WorkshopGenerationStartInputSchema,
+  WorkshopGenerationStartResultSchema,
+  WorkshopGenerationStatusResultSchema,
   WorkshopProjectCreateInputSchema,
   WorkshopProjectOpenInputSchema,
   WorkshopProjectSnapshotSchema,
@@ -79,5 +84,17 @@ export const workshopRequestSchemas = {
   'workshop.timeline.list': defineRoute({
     input: WorkshopTimelineListInputSchema,
     output: WorkshopTimelineListResultSchema
+  }),
+  'workshop.generation.start': defineRoute({
+    input: WorkshopGenerationStartInputSchema,
+    output: WorkshopGenerationStartResultSchema
+  }),
+  'workshop.generation.status': defineRoute({
+    input: WorkshopGenerationJobInputSchema,
+    output: WorkshopGenerationStatusResultSchema
+  }),
+  'workshop.generation.cancel': defineRoute({
+    input: WorkshopGenerationJobInputSchema,
+    output: WorkshopGenerationCancelResultSchema
   })
 }

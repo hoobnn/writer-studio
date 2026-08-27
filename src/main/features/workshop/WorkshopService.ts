@@ -1,8 +1,11 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
+import { application } from '@application'
+import { modelService } from '@data/services/ModelService'
+import { providerService } from '@data/services/ProviderService'
 import { KeyedMutex } from '@main/core/concurrency/KeyedMutex'
-import { BaseService, Injectable, Phase, ServicePhase } from '@main/core/lifecycle'
+import { BaseService, DependsOn, Injectable, Phase, ServicePhase } from '@main/core/lifecycle'
 import type {
   WorkshopCanonCommitInput,
   WorkshopChapterReadInput,
@@ -11,6 +14,10 @@ import type {
   WorkshopEntityListInput,
   WorkshopEntityListResult,
   WorkshopEntityReadInput,
+  WorkshopGenerationCancelResult,
+  WorkshopGenerationStartInput,
+  WorkshopGenerationStartResult,
+  WorkshopGenerationStatusResult,
   WorkshopProjectCreateInput,
   WorkshopProjectSnapshot,
   WorkshopProposal,
@@ -26,7 +33,9 @@ import type {
 } from '@shared/types/workshop'
 
 import { WorkshopError, workshopErrorCodes } from './workshopErrors'
+import { createWorkshopGenerationJobHandler } from './workshopGenerationJobHandler'
 import { WorkshopKernel } from './WorkshopKernel'
+import { resolveWorkshopGenerationModel } from './workshopModelPolicy'
 
 function sanitizeProjectDirectory(title: string): string {
   const sanitized = title
@@ -45,8 +54,15 @@ function sanitizeProjectDirectory(title: string): string {
  */
 @Injectable('WorkshopService')
 @ServicePhase(Phase.WhenReady)
+@DependsOn(['AiService', 'JobManager'])
 export class WorkshopService extends BaseService {
   private readonly projectLock = new KeyedMutex()
+
+  protected onInit(): void {
+    application
+      .get('JobManager')
+      .registerHandler('workshop.generate-proposal', createWorkshopGenerationJobHandler(this.projectLock))
+  }
 
   private async canonicalRoot(rootPath: string): Promise<string> {
     try {
@@ -156,5 +172,44 @@ export class WorkshopService extends BaseService {
 
   async listTimeline(input: WorkshopTimelineListInput): Promise<WorkshopTimelineListResult> {
     return this.withProject(input.rootPath, async (kernel) => ({ entries: await kernel.timeline(input.limit) }))
+  }
+
+  async startGeneration(input: WorkshopGenerationStartInput): Promise<WorkshopGenerationStartResult> {
+    const root = await this.canonicalRoot(input.rootPath)
+    await WorkshopKernel.open(root)
+    const uniqueModelId = resolveWorkshopGenerationModel(
+      {
+        explicit: input.uniqueModelId,
+        configuredDefault:
+          application.get('PreferenceService').get('feature.quick_assistant.model_id') ??
+          application.get('PreferenceService').get('chat.default_model_id')
+      },
+      {
+        getProvider: (providerId) => providerService.getByProviderId(providerId),
+        getModel: (providerId, modelId) => modelService.getByKey(providerId, modelId)
+      }
+    )
+    const handle = application.get('JobManager').enqueue('workshop.generate-proposal', {
+      rootPath: root,
+      role: input.role,
+      instruction: input.instruction,
+      uniqueModelId,
+      chapterId: input.chapterId
+    })
+    return handle.snapshot
+  }
+
+  async generationStatus(jobId: string): Promise<WorkshopGenerationStatusResult> {
+    const snapshot = await application.get('JobManager').get(jobId)
+    if (!snapshot || snapshot.type !== 'workshop.generate-proposal') return null
+    return snapshot
+  }
+
+  async cancelGeneration(jobId: string): Promise<WorkshopGenerationCancelResult> {
+    const jobManager = application.get('JobManager')
+    const snapshot = await jobManager.get(jobId)
+    if (!snapshot || snapshot.type !== 'workshop.generate-proposal') return { cancelled: false }
+    const result = await jobManager.cancel(jobId, 'Cancelled by workshop')
+    return { cancelled: result.outcome === 'cancelled' }
   }
 }

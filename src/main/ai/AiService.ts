@@ -44,6 +44,7 @@ import {
   type ModelMessage,
   type UIMessageChunk
 } from 'ai'
+import type { ZodType } from 'zod'
 
 import { isAgentSessionTopic } from './agentSession/topic'
 import { createAnalyticsHook } from './hooks/analyticsHook'
@@ -61,6 +62,7 @@ import type { AgentLoopHooks, NativeFileSupport, RequestFeature } from './runtim
 import { Agent, buildAgentParams, buildFallbackModels, createRetryableWrap, readRetryPolicy } from './runtime/aiSdk'
 import { skillService } from './skills/SkillService'
 import { type MessageRuntimeTimingSink, WebContentsListener } from './streamManager'
+import { runStructuredGeneration, type StructuredGenerationResult } from './structuredOutput'
 import { resolveModelTokenDialect } from './tokens/dialect'
 import { registerBuiltinTools } from './tools/adapters/aiSdk/builtin/registerBuiltinTools'
 import type {
@@ -723,6 +725,26 @@ export class AiService extends BaseService {
 
     // prompt and messages are mutually exclusive in AI SDK; preserve that.
     return agent.generate(request.prompt ? { prompt: request.prompt } : { messages: request.messages ?? [] }, signal)
+  }
+
+  /**
+   * Prompt-driven structured generation: run `generateText` and validate the
+   * output against `schema`, feeding validation errors back for bounded repair
+   * retries. Provider-agnostic (no native structured-output requirement) — the
+   * lowest common denominator for BYOK models; callers depend only on this
+   * signature, so a native `generateObject` path can replace the internals later.
+   */
+  async generateStructured<T>(
+    request: AsInProcess<AiGenerateRequest> & { prompt: string },
+    schema: ZodType<T>,
+    options: { maxRepairAttempts?: number } = {}
+  ): Promise<StructuredGenerationResult<T>> {
+    return runStructuredGeneration({
+      schema,
+      prompt: request.prompt,
+      maxRepairAttempts: options.maxRepairAttempts,
+      generate: async (prompt) => (await this.generateText({ ...request, prompt })).text
+    })
   }
 
   // ── Image generation ──

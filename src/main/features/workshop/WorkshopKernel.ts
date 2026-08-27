@@ -317,6 +317,9 @@ export class WorkshopKernel {
   }): Promise<WorkshopProposal> {
     const changes = this.validateChangeset(input.changes)
     const id = input.id ?? randomUUID()
+    if (await this.proposalExists(id)) {
+      throw new WorkshopError(workshopErrorCodes.PROPOSAL_EXISTS, 'Proposal id already exists', { id })
+    }
     const metadata: WorkshopProposalMetadata = WorkshopProposalMetadataSchema.parse({
       id,
       title: input.title,
@@ -334,6 +337,15 @@ export class WorkshopKernel {
     await git.writeRef({ fs, dir: this.rootPath, ref: `${PROPOSAL_REF_PREFIX}/${id}`, value: oid, force: true })
     logger.info('workshop proposal created', { id })
     return this.readProposal(id)
+  }
+
+  async proposalExists(id: string): Promise<boolean> {
+    try {
+      await this.locateProposal(id)
+      return true
+    } catch {
+      return false
+    }
   }
 
   async listProposals(): Promise<WorkshopProposal[]> {

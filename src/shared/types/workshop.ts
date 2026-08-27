@@ -1,3 +1,5 @@
+import { type JobSnapshot, JobSnapshotSchema } from '@shared/data/api/schemas/jobs'
+import { UniqueModelIdSchema } from '@shared/data/types/model'
 import * as z from 'zod'
 
 /**
@@ -405,6 +407,31 @@ export const WorkshopTimelineListResultSchema = z.strictObject({
   entries: z.array(WorkshopTimelineEntrySchema).max(1_000)
 })
 export type WorkshopTimelineListResult = z.infer<typeof WorkshopTimelineListResultSchema>
+
+export const WorkshopGenerationStartInputSchema = z.strictObject({
+  rootPath: z.string().trim().min(1),
+  role: z.enum(['planner', 'writer']),
+  instruction: z.string().trim().min(1).max(20_000),
+  uniqueModelId: UniqueModelIdSchema.optional(),
+  /** writer 角色的目标章节;省略则由模型在输出中指定(可为新章节)。 */
+  chapterId: WorkshopIdSchema.optional()
+})
+export type WorkshopGenerationStartInput = z.infer<typeof WorkshopGenerationStartInputSchema>
+
+export const WorkshopGenerationStartResultSchema = JobSnapshotSchema
+export type WorkshopGenerationStartResult = JobSnapshot
+
+export const WorkshopGenerationJobInputSchema = z.strictObject({ jobId: z.string().trim().min(1) })
+export type WorkshopGenerationJobInput = z.infer<typeof WorkshopGenerationJobInputSchema>
+
+export const WorkshopGenerationStatusResultSchema = JobSnapshotSchema.nullable()
+export type WorkshopGenerationStatusResult = JobSnapshot | null
+
+export const WorkshopGenerationCancelResultSchema = z.strictObject({ cancelled: z.boolean() })
+export type WorkshopGenerationCancelResult = z.infer<typeof WorkshopGenerationCancelResultSchema>
+
+export const WorkshopGenerationOutputSchema = z.strictObject({ proposalId: WorkshopIdSchema })
+export type WorkshopGenerationOutput = z.infer<typeof WorkshopGenerationOutputSchema>
 
 export const WorkshopRollbackInputSchema = z.strictObject({
   rootPath: z.string().trim().min(1),
