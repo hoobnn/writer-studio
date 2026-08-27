@@ -24,6 +24,7 @@ export async function collectWorkshopContext(
 ): Promise<WorkshopContextData> {
   const card = await kernel.readProjectCard()
   const chapterIds = await kernel.listChapterIds()
+  const promptOverrides = await kernel.readPromptOverrides()
   const entities: WorkshopContextData['entities'] = []
   for (const collection of WORKSHOP_COLLECTIONS) {
     for (const entity of await kernel.listEntities(collection)) entities.push({ collection, entity })
@@ -72,5 +73,5 @@ export async function collectWorkshopContext(
       }
     }
   }
-  return { card, entities, chapterIds, targetChapter, relatedChapters }
+  return { card, entities, chapterIds, targetChapter, relatedChapters, promptOverrides }
 }

@@ -266,3 +266,39 @@ describe('WorkshopKernel 崩溃恢复', () => {
     expect(await readFile(chapterPath, 'utf8')).toBe('正史正文')
   })
 })
+
+describe('WorkshopKernel 角色指令', () => {
+  it('write_prompt 落为 prompts/<role>.md 并可读回；delete_prompt 恢复未自定义', async () => {
+    const kernel = await createProject()
+    await kernel.commitCanon({
+      title: '自定义写手指令',
+      origin: HUMAN,
+      changes: [{ op: 'write_prompt', role: 'writer', content: '你是冷硬派写手。' }]
+    })
+    expect(await readFile(path.join(kernel.rootPath, 'prompts', 'writer.md'), 'utf8')).toBe('你是冷硬派写手。\n')
+    expect(await kernel.readPromptOverrides()).toEqual({ writer: '你是冷硬派写手。' })
+
+    await kernel.commitCanon({
+      title: '恢复默认',
+      origin: HUMAN,
+      changes: [{ op: 'delete_prompt', role: 'writer' }]
+    })
+    expect(await kernel.readPromptOverrides()).toEqual({})
+  })
+
+  it('回滚同样还原角色指令文件', async () => {
+    const kernel = await createProject()
+    const before = await kernel.commitCanon({
+      title: '基线',
+      origin: HUMAN,
+      changes: [{ op: 'write_prompt', role: 'discussion', content: '毒舌编辑。' }]
+    })
+    await kernel.commitCanon({
+      title: '改口',
+      origin: HUMAN,
+      changes: [{ op: 'write_prompt', role: 'discussion', content: '温和编辑。' }]
+    })
+    await kernel.rollbackTo(before.commit)
+    expect(await kernel.readPromptOverrides()).toEqual({ discussion: '毒舌编辑。' })
+  })
+})

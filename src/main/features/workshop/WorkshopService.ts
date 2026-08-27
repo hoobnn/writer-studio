@@ -30,6 +30,8 @@ import type {
   WorkshopInvariantRunInput,
   WorkshopProjectCreateInput,
   WorkshopProjectSnapshot,
+  WorkshopPromptListInput,
+  WorkshopPromptListResult,
   WorkshopProposal,
   WorkshopProposalChangesResult,
   WorkshopProposalCreateInput,
@@ -42,6 +44,7 @@ import type {
   WorkshopTimelineListResult,
   WorkshopVolumeRunStartInput
 } from '@shared/types/workshop'
+import { WORKSHOP_PROMPT_ROLES } from '@shared/types/workshop'
 
 import { createWorkshopChapterCycleJobHandler } from './workshopChapterCycleJobHandler'
 import { collectWorkshopContext } from './workshopContext'
@@ -53,6 +56,7 @@ import { createWorkshopGenerationJobHandler } from './workshopGenerationJobHandl
 import { runWorkshopInvariants } from './workshopInvariants'
 import { WorkshopKernel } from './WorkshopKernel'
 import { resolveWorkshopGenerationModel, type WorkshopModelRole } from './workshopModelPolicy'
+import { WORKSHOP_DEFAULT_ROLE_GUIDANCE } from './workshopPrompts'
 import { createWorkshopVolumeRunJobHandler } from './workshopVolumeRunJobHandler'
 
 const logger = loggerService.withContext('workshopService')
@@ -154,6 +158,19 @@ export class WorkshopService extends BaseService {
 
   async rollback(input: WorkshopRollbackInput): Promise<WorkshopTimelineEntry> {
     return this.withProject(input.rootPath, (kernel) => kernel.rollbackTo(input.commit))
+  }
+
+  async listPrompts(input: WorkshopPromptListInput): Promise<WorkshopPromptListResult> {
+    return this.withProject(input.rootPath, async (kernel) => {
+      const overrides = await kernel.readPromptOverrides()
+      return {
+        prompts: WORKSHOP_PROMPT_ROLES.map((role) => ({
+          role,
+          custom: overrides[role] ?? null,
+          builtin: WORKSHOP_DEFAULT_ROLE_GUIDANCE[role]
+        }))
+      }
+    })
   }
 
   async createProposal(input: WorkshopProposalCreateInput): Promise<WorkshopProposal> {

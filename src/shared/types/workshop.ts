@@ -23,6 +23,12 @@ export const WorkshopTimestampSchema = z.string().datetime()
 export const WorkshopAgentRoleSchema = z.enum(['planner', 'writer', 'reviewer', 'guardian'])
 export type WorkshopAgentRole = z.infer<typeof WorkshopAgentRoleSchema>
 
+/** 可自定义人设指令的角色面（编辑部四角色 + 讨论），指令随项目存于 prompts/<role>.md。 */
+export const WORKSHOP_PROMPT_ROLES = ['planner', 'writer', 'reviewer', 'guardian', 'discussion'] as const
+export const WorkshopPromptRoleSchema = z.enum(WORKSHOP_PROMPT_ROLES)
+export type WorkshopPromptRole = z.infer<typeof WorkshopPromptRoleSchema>
+export const WORKSHOP_MAX_PROMPT_CHARS = 20_000 as const
+
 export const WorkshopOriginSchema = z.strictObject({
   kind: z.enum(['human', 'ai']),
   role: WorkshopAgentRoleSchema.optional(),
@@ -241,6 +247,15 @@ export const WorkshopChangeSchema = z.discriminatedUnion('op', [
   z.strictObject({
     op: z.literal('write_project'),
     card: WorkshopProjectCardSchema
+  }),
+  z.strictObject({
+    op: z.literal('write_prompt'),
+    role: WorkshopPromptRoleSchema,
+    content: z.string().trim().min(1).max(WORKSHOP_MAX_PROMPT_CHARS)
+  }),
+  z.strictObject({
+    op: z.literal('delete_prompt'),
+    role: WorkshopPromptRoleSchema
   })
 ])
 export type WorkshopChange = z.infer<typeof WorkshopChangeSchema>
@@ -296,6 +311,7 @@ export type WorkshopTimelineEntry = z.infer<typeof WorkshopTimelineEntrySchema>
 
 export const WORKSHOP_PROJECT_FILE = 'project.json'
 export const WORKSHOP_MANUSCRIPT_DIR = 'manuscript'
+export const WORKSHOP_PROMPT_DIR = 'prompts'
 
 export function workshopEntityFilepath(collection: WorkshopCollection, id: WorkshopId): string {
   return `${collection}/${id}.json`
@@ -303,6 +319,10 @@ export function workshopEntityFilepath(collection: WorkshopCollection, id: Works
 
 export function workshopChapterFilepath(chapterId: WorkshopId): string {
   return `${WORKSHOP_MANUSCRIPT_DIR}/${chapterId}.md`
+}
+
+export function workshopPromptFilepath(role: WorkshopPromptRole): string {
+  return `${WORKSHOP_PROMPT_DIR}/${role}.md`
 }
 
 // ---------------------------------------------------------------------------
@@ -354,6 +374,24 @@ export const WorkshopChapterReadResultSchema = z.strictObject({
   content: z.string().max(WORKSHOP_MAX_CHAPTER_CHARS)
 })
 export type WorkshopChapterReadResult = z.infer<typeof WorkshopChapterReadResultSchema>
+
+export const WorkshopPromptListInputSchema = z.strictObject({
+  rootPath: z.string().trim().min(1)
+})
+export type WorkshopPromptListInput = z.infer<typeof WorkshopPromptListInputSchema>
+
+export const WorkshopPromptEntrySchema = z.strictObject({
+  role: WorkshopPromptRoleSchema,
+  /** 项目内自定义指令；null 表示未自定义（使用内置默认）。 */
+  custom: z.string().max(WORKSHOP_MAX_PROMPT_CHARS).nullable(),
+  builtin: z.string().max(WORKSHOP_MAX_PROMPT_CHARS)
+})
+export type WorkshopPromptEntry = z.infer<typeof WorkshopPromptEntrySchema>
+
+export const WorkshopPromptListResultSchema = z.strictObject({
+  prompts: z.array(WorkshopPromptEntrySchema).max(WORKSHOP_PROMPT_ROLES.length)
+})
+export type WorkshopPromptListResult = z.infer<typeof WorkshopPromptListResultSchema>
 
 export const WorkshopCanonCommitInputSchema = z.strictObject({
   rootPath: z.string().trim().min(1),
@@ -548,5 +586,8 @@ export function workshopChangeFilepath(change: WorkshopChange): string {
       return workshopChapterFilepath(change.chapterId)
     case 'write_project':
       return WORKSHOP_PROJECT_FILE
+    case 'write_prompt':
+    case 'delete_prompt':
+      return workshopPromptFilepath(change.role)
   }
 }

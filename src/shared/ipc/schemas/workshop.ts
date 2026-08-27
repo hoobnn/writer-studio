@@ -22,6 +22,8 @@ import {
   WorkshopProjectCreateInputSchema,
   WorkshopProjectOpenInputSchema,
   WorkshopProjectSnapshotSchema,
+  WorkshopPromptListInputSchema,
+  WorkshopPromptListResultSchema,
   WorkshopProposalChangesResultSchema,
   WorkshopProposalCreateInputSchema,
   WorkshopProposalListInputSchema,
@@ -61,6 +63,10 @@ export const workshopRequestSchemas = {
   'workshop.canon.commit': defineRoute({
     input: WorkshopCanonCommitInputSchema,
     output: WorkshopTimelineEntrySchema
+  }),
+  'workshop.prompt.list': defineRoute({
+    input: WorkshopPromptListInputSchema,
+    output: WorkshopPromptListResultSchema
   }),
   'workshop.canon.rollback': defineRoute({
     input: WorkshopRollbackInputSchema,

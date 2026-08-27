@@ -6,6 +6,7 @@ import { loggerService } from '@logger'
 import {
   WORKSHOP_MANUSCRIPT_DIR,
   WORKSHOP_PROJECT_FILE,
+  WORKSHOP_PROMPT_ROLES,
   WORKSHOP_SCHEMA_VERSION,
   type WorkshopChange,
   workshopChangeFilepath,
@@ -20,6 +21,8 @@ import {
   WorkshopOriginSchema,
   type WorkshopProjectCard,
   WorkshopProjectCardSchema,
+  workshopPromptFilepath,
+  type WorkshopPromptRole,
   type WorkshopProposal,
   type WorkshopProposalMetadata,
   WorkshopProposalMetadataSchema,
@@ -232,6 +235,17 @@ export class WorkshopKernel {
       throw new WorkshopError(workshopErrorCodes.CHAPTER_NOT_FOUND, 'Workshop chapter not found', { chapterId })
     }
     return raw
+  }
+
+  /** 各角色的自定义人设指令（prompts/<role>.md）；文件缺失或空白视为未自定义。 */
+  async readPromptOverrides(): Promise<Partial<Record<WorkshopPromptRole, string>>> {
+    const overrides: Partial<Record<WorkshopPromptRole, string>> = {}
+    for (const role of WORKSHOP_PROMPT_ROLES) {
+      const raw = await this.readWorkdirFile(workshopPromptFilepath(role))
+      const content = raw?.trim()
+      if (content) overrides[role] = content
+    }
+    return overrides
   }
 
   async listChapterIds(): Promise<string[]> {
@@ -478,8 +492,11 @@ export class WorkshopKernel {
         return change.content
       case 'write_project':
         return `${JSON.stringify(WorkshopProjectCardSchema.parse(change.card), null, 2)}\n`
+      case 'write_prompt':
+        return `${change.content}\n`
       case 'delete_entity':
       case 'delete_chapter':
+      case 'delete_prompt':
         return null
     }
   }
