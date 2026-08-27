@@ -70,6 +70,7 @@
 
 - 检索召回为词法 v1(摘要/章计划词重合);向量检索可复用 `features/knowledge` 的 sqlite-vec 管线替换同一接口。
 - 卷外散章的全序取 `project.json.looseChapterIds`,未登记的散章排在卷后;章节创建尚不自动登记散章序。
-- 实体编辑为 schema 校验的 JSON 编辑器;字段级表单沿用 `documentFormFields` 原语按集合渐进补齐。
+- 实体编辑为按集合的可视化表单(`entityForms/`,字段原语承自 `documentFormFields` 模式)+ JSON 逃生舱;支持人工新建/删除实体(`write_entity`/`delete_entity` canon 提交)。
 - 讨论线程单线程(`main`);多线程与滚动摘要待需求驱动。
+- 工作区为 Resizable 可折叠三栏(导航/主视图/右栏)+ 专注模式,布局持久化于 `ui.workshop.*` persist cache;中栏以 view 状态机路由(章节/实体/提案审阅/整卷流水线),脏守卫统一注册,后台刷新经章节编辑器对账、不覆盖未保存草稿;job 观察走 `useJob` 订阅(无轮询),整卷任务带进度与取消并可跨重启恢复。
 - 旧 `features/writer`(ADR-001)未删除,`/app/writer` 仍可访问;主侧栏入口已指向 `/app/workshop`。删除旧实现是独立任务。
