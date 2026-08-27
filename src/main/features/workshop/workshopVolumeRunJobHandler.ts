@@ -1,9 +1,8 @@
 import type { KeyedMutex } from '@main/core/concurrency/KeyedMutex'
 import type { JobHandler } from '@main/core/job/types'
-import type { UniqueModelId } from '@shared/data/types/model'
 import * as z from 'zod'
 
-import { produceChapterProposal } from './workshopChapterCycleJobHandler'
+import { produceChapterProposal, type WorkshopCycleModels } from './workshopChapterCycleJobHandler'
 import { workshopProjectQueue } from './workshopGenerationJobHandler'
 import { WorkshopKernel } from './WorkshopKernel'
 
@@ -17,7 +16,7 @@ export interface WorkshopVolumeRunJobPayload {
   rootPath: string
   volumeId: string
   instruction: string
-  uniqueModelId: UniqueModelId
+  models: WorkshopCycleModels
   /** auto:机检+审校通过即入正史并续写下一章;review:产出一章提案后暂停等人。 */
   gate: 'auto' | 'review'
   maxChapters: number
@@ -70,7 +69,7 @@ export function createWorkshopVolumeRunJobHandler(projectLock: KeyedMutex): JobH
           rootPath,
           chapterId: nextChapterId,
           instruction: ctx.input.instruction,
-          uniqueModelId: ctx.input.uniqueModelId,
+          models: ctx.input.models,
           proposalId,
           review: true,
           signal: ctx.signal,

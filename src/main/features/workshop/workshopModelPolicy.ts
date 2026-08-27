@@ -6,6 +6,9 @@ import { isExternalCliProvider } from '@shared/utils/provider'
 
 import { WorkshopError, workshopErrorCodes } from './workshopErrors'
 
+/** 可按角色覆盖模型的角色面(编辑部四角色 + 讨论)。 */
+export type WorkshopModelRole = 'planner' | 'writer' | 'reviewer' | 'guardian' | 'discussion'
+
 export interface WorkshopModelLookup {
   getProvider: (providerId: string) => Provider
   getModel: (providerId: string, modelId: string) => Model
@@ -29,9 +32,12 @@ function resolveUsableCandidate(
   }
 }
 
-/** fail-closed 解析生成模型:显式指定不可用即报错,未指定时回退配置默认与内置默认。 */
+/**
+ * fail-closed 解析生成模型:显式指定不可用即报错;未指定时按 configuredDefaults
+ * 顺序取第一个可用候选(角色覆盖 → 工坊默认 → 快捷助手 → 聊天默认),最终回退内置默认。
+ */
 export function resolveWorkshopGenerationModel(
-  input: { explicit: string | undefined; configuredDefault: string | null | undefined },
+  input: { explicit: string | undefined; configuredDefaults: (string | null | undefined)[] },
   lookup: WorkshopModelLookup
 ): UniqueModelId {
   if (input.explicit !== undefined) {
@@ -41,9 +47,9 @@ export function resolveWorkshopGenerationModel(
     }
     return explicit
   }
-  return (
-    resolveUsableCandidate(input.configuredDefault, lookup) ??
-    resolveUsableCandidate(CHERRYAI_DEFAULT_UNIQUE_MODEL_ID, lookup) ??
-    CHERRYAI_DEFAULT_UNIQUE_MODEL_ID
-  )
+  for (const candidate of input.configuredDefaults) {
+    const resolved = resolveUsableCandidate(candidate, lookup)
+    if (resolved) return resolved
+  }
+  return resolveUsableCandidate(CHERRYAI_DEFAULT_UNIQUE_MODEL_ID, lookup) ?? CHERRYAI_DEFAULT_UNIQUE_MODEL_ID
 }

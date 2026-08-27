@@ -101,7 +101,7 @@ describe('workshopVolumeRunJobHandler', () => {
         rootPath: kernel.rootPath,
         volumeId: 'vol-1',
         instruction: '按卷推进',
-        uniqueModelId: 'cherryai:test' as never,
+        models: { writer: 'cherryai:test', guardian: 'cherryai:test', reviewer: 'cherryai:test' } as never,
         gate: 'auto',
         maxChapters: 10
       }) as never
@@ -199,7 +199,7 @@ describe('workshopVolumeRunJobHandler', () => {
         rootPath: kernel.rootPath,
         volumeId: 'vol-1',
         instruction: '按卷推进',
-        uniqueModelId: 'cherryai:test' as never,
+        models: { writer: 'cherryai:test', guardian: 'cherryai:test', reviewer: 'cherryai:test' } as never,
         gate: 'auto',
         maxChapters: 10
       }) as never

@@ -52,7 +52,7 @@ import { assembleManuscript, exportWorkshopManuscript, renderMarkdown } from './
 import { createWorkshopGenerationJobHandler } from './workshopGenerationJobHandler'
 import { runWorkshopInvariants } from './workshopInvariants'
 import { WorkshopKernel } from './WorkshopKernel'
-import { resolveWorkshopGenerationModel } from './workshopModelPolicy'
+import { resolveWorkshopGenerationModel, type WorkshopModelRole } from './workshopModelPolicy'
 import { createWorkshopVolumeRunJobHandler } from './workshopVolumeRunJobHandler'
 
 const logger = loggerService.withContext('workshopService')
@@ -206,7 +206,7 @@ export class WorkshopService extends BaseService {
 
   private enqueueGuardianTurn(rootPath: string, chapterId: string): void {
     try {
-      const uniqueModelId = this.resolveGenerationModel(undefined)
+      const uniqueModelId = this.resolveGenerationModel(undefined, 'guardian')
       application.get('JobManager').enqueue('workshop.generate-proposal', {
         rootPath,
         role: 'guardian',
@@ -230,13 +230,18 @@ export class WorkshopService extends BaseService {
     return this.withProject(input.rootPath, async (kernel) => ({ entries: await kernel.timeline(input.limit) }))
   }
 
-  private resolveGenerationModel(explicit: string | undefined) {
+  private resolveGenerationModel(explicit: string | undefined, role?: WorkshopModelRole) {
+    const preferences = application.get('PreferenceService')
+    const roleOverrides = preferences.get('feature.workshop.role_model_ids') ?? {}
     return resolveWorkshopGenerationModel(
       {
         explicit,
-        configuredDefault:
-          application.get('PreferenceService').get('feature.quick_assistant.model_id') ??
-          application.get('PreferenceService').get('chat.default_model_id')
+        configuredDefaults: [
+          role ? roleOverrides[role] : undefined,
+          preferences.get('feature.workshop.default_model_id'),
+          preferences.get('feature.quick_assistant.model_id'),
+          preferences.get('chat.default_model_id')
+        ]
       },
       {
         getProvider: (providerId) => providerService.getByProviderId(providerId),
@@ -245,10 +250,19 @@ export class WorkshopService extends BaseService {
     )
   }
 
+  /** 成章循环三个内部角色各自解析模型;显式指定时三者同用该模型(fail-closed)。 */
+  private resolveCycleModels(explicit: string | undefined) {
+    return {
+      writer: this.resolveGenerationModel(explicit, 'writer'),
+      guardian: this.resolveGenerationModel(explicit, 'guardian'),
+      reviewer: this.resolveGenerationModel(explicit, 'reviewer')
+    }
+  }
+
   async startGeneration(input: WorkshopGenerationStartInput): Promise<WorkshopGenerationStartResult> {
     const root = await this.canonicalRoot(input.rootPath)
     await WorkshopKernel.open(root)
-    const uniqueModelId = this.resolveGenerationModel(input.uniqueModelId)
+    const uniqueModelId = this.resolveGenerationModel(input.uniqueModelId, input.role)
     const handle = application.get('JobManager').enqueue('workshop.generate-proposal', {
       rootPath: root,
       role: input.role,
@@ -286,12 +300,11 @@ export class WorkshopService extends BaseService {
     const root = await this.canonicalRoot(input.rootPath)
     const kernel = await WorkshopKernel.open(root)
     await kernel.readEntity('outline/volumes', input.volumeId)
-    const uniqueModelId = this.resolveGenerationModel(input.uniqueModelId)
     const handle = application.get('JobManager').enqueue('workshop.volume-run', {
       rootPath: root,
       volumeId: input.volumeId,
       instruction: input.instruction,
-      uniqueModelId,
+      models: this.resolveCycleModels(input.uniqueModelId),
       gate: input.gate,
       maxChapters: input.maxChapters
     })
@@ -301,12 +314,11 @@ export class WorkshopService extends BaseService {
   async startChapterCycle(input: WorkshopChapterCycleStartInput): Promise<WorkshopGenerationStartResult> {
     const root = await this.canonicalRoot(input.rootPath)
     await WorkshopKernel.open(root)
-    const uniqueModelId = this.resolveGenerationModel(input.uniqueModelId)
     const handle = application.get('JobManager').enqueue('workshop.chapter-cycle', {
       rootPath: root,
       chapterId: input.chapterId,
       instruction: input.instruction,
-      uniqueModelId
+      models: this.resolveCycleModels(input.uniqueModelId)
     })
     return handle.snapshot
   }
@@ -345,7 +357,7 @@ export class WorkshopService extends BaseService {
 
   async sendDiscussionMessage(input: WorkshopDiscussionSendInput): Promise<WorkshopGenerationStartResult> {
     const root = await this.canonicalRoot(input.rootPath)
-    const uniqueModelId = this.resolveGenerationModel(input.uniqueModelId)
+    const uniqueModelId = this.resolveGenerationModel(input.uniqueModelId, 'discussion')
     await this.projectLock.runExclusive(root, async () => {
       await WorkshopKernel.open(root)
       await appendDiscussionMessage(root, {

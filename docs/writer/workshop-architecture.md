@@ -43,6 +43,19 @@
 | `workshopExport` | 确定性组稿 + markdown/txt/epub(手工最小 EPUB3);docx 复用 ExportService |
 | `structuredOutput`(src/main/ai/) | AiService.generateStructured:提示词驱动 zod 校验 + 有界修复重试,provider 无关 |
 
+## 模型策略
+
+生成模型按候选链解析(`workshopModelPolicy`),对每次调用生效:
+
+```
+显式指定(fail-closed,不可用即报错)
+  → 角色覆盖 feature.workshop.role_model_ids[role]   # planner/writer/reviewer/guardian/discussion
+  → 工坊默认 feature.workshop.default_model_id
+  → 快捷助手模型 → 聊天默认模型 → 内置默认
+```
+
+配置入口在工坊侧栏的模型设置对话框;成章循环与整卷流水线在入队时把三个内部角色(写手/守卫/审校)各自解析好的模型写进任务载荷,循环内按角色路由。
+
 ## 不变量
 
 1. AI 产出永不直写正史;一切进入正史的内容都经由提案应用或人工 canon 提交。

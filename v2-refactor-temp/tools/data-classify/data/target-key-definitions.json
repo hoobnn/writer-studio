@@ -127,14 +127,21 @@
     {
       "targetKey": "chat.input.toolbar.pinned_tools",
       "type": "string[]",
-      "defaultValue": ["composer:new-conversation", "web-search"],
+      "defaultValue": [
+        "composer:new-conversation",
+        "web-search"
+      ],
       "status": "classified",
       "description": "Ordered tool ids pinned on the chat composer toolbar (v2 new feature, no v1 source)"
     },
     {
       "targetKey": "agent.input.toolbar.pinned_tools",
       "type": "string[]",
-      "defaultValue": ["composer:new-session", "skills", "permission-mode"],
+      "defaultValue": [
+        "composer:new-session",
+        "skills",
+        "permission-mode"
+      ],
       "status": "classified",
       "description": "Ordered tool ids pinned on the agent composer toolbar (v2 new feature, no v1 source)"
     },
@@ -163,11 +170,26 @@
       "targetKey": "ui.sidebar.favorites",
       "type": "PreferenceTypes.SidebarFavoriteItem[]",
       "defaultValue": [
-        { "id": "assistants", "type": "app" },
-        { "id": "agents", "type": "app" },
-        { "id": "translate", "type": "app" },
-        { "id": "paintings", "type": "app" },
-        { "id": "knowledge", "type": "app" }
+        {
+          "id": "assistants",
+          "type": "app"
+        },
+        {
+          "id": "agents",
+          "type": "app"
+        },
+        {
+          "id": "translate",
+          "type": "app"
+        },
+        {
+          "id": "paintings",
+          "type": "app"
+        },
+        {
+          "id": "knowledge",
+          "type": "app"
+        }
       ],
       "status": "classified",
       "description": "Left sidebar favorites, an ordered list of tagged items: built-in apps ({type:'app'}) and mini apps ({type:'mini_app'})"
@@ -724,11 +746,29 @@
       "targetKey": "shortcut.screenshot.capture",
       "type": "PreferenceTypes.PreferenceShortcutType",
       "defaultValue": {
-        "binding": ["CommandOrControl", "Shift", "A"],
+        "binding": [
+          "CommandOrControl",
+          "Shift",
+          "A"
+        ],
         "enabled": true
       },
       "status": "classified",
       "description": "Command shortcut: screenshot.capture (unified command system)"
+    },
+    {
+      "targetKey": "feature.workshop.default_model_id",
+      "type": "string",
+      "defaultValue": null,
+      "status": "classified",
+      "description": "Workshop default generation model UniqueModelId; falls back to quick assistant / chat default when null (v2 new feature, no v1 source)"
+    },
+    {
+      "targetKey": "feature.workshop.role_model_ids",
+      "type": "PreferenceTypes.WorkshopRoleModelOverrides",
+      "defaultValue": {},
+      "status": "classified",
+      "description": "Per-role model overrides for workshop agents (planner/writer/reviewer/guardian/discussion) (v2 new feature, no v1 source)"
     }
   ]
 }

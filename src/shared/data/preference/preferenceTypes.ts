@@ -420,3 +420,8 @@ export type CustomToolDefinition = {
   tool: string
   requestedVersion?: string
 }
+
+/** Workshop 编辑部角色(含讨论)的按角色模型覆盖;值为 UniqueModelId,缺省回退到工坊默认模型链。 */
+export type WorkshopRoleModelOverrides = Partial<
+  Record<'planner' | 'writer' | 'reviewer' | 'guardian' | 'discussion', string>
+>

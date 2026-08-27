@@ -32,11 +32,18 @@ declare module '@main/core/job/jobRegistry' {
   }
 }
 
+/** 循环内部三个角色各自使用的模型(服务层按角色偏好解析后传入)。 */
+export interface WorkshopCycleModels {
+  writer: UniqueModelId
+  guardian: UniqueModelId
+  reviewer: UniqueModelId
+}
+
 export interface WorkshopChapterCycleJobPayload {
   rootPath: string
   chapterId: string
   instruction: string
-  uniqueModelId: UniqueModelId
+  models: WorkshopCycleModels
   /** 是否在机检之后追加审校关卡(默认开)。 */
   review?: boolean
 }
@@ -81,7 +88,7 @@ export interface ChapterCycleParams {
   rootPath: string
   chapterId: string
   instruction: string
-  uniqueModelId: UniqueModelId
+  models: WorkshopCycleModels
   proposalId: string
   review: boolean
   signal: AbortSignal
@@ -124,7 +131,7 @@ export async function produceChapterProposal(params: ChapterCycleParams): Promis
     const prompt = buildWorkshopGenerationPrompt({ role, instruction, context })
     const { object } = await aiService.generateStructured(
       {
-        uniqueModelId: params.uniqueModelId,
+        uniqueModelId: params.models[role],
         system: prompt.system,
         prompt: prompt.prompt,
         contextOwner: 'caller' as const,
@@ -237,7 +244,7 @@ export function createWorkshopChapterCycleJobHandler(
         rootPath: ctx.input.rootPath,
         chapterId: ctx.input.chapterId,
         instruction: ctx.input.instruction,
-        uniqueModelId: ctx.input.uniqueModelId,
+        models: ctx.input.models,
         proposalId: ctx.jobId,
         review: ctx.input.review ?? true,
         signal: ctx.signal,

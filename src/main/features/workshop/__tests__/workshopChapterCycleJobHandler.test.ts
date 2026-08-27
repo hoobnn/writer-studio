@@ -50,22 +50,29 @@ function jobContext(jobId: string, input: WorkshopChapterCycleJobPayload) {
 
 function stubAiService(texts: string[]) {
   const generate = vi.fn()
+  const usedModelIds: string[] = []
   for (const text of texts) generate.mockResolvedValueOnce(text)
   ;(application.get as ReturnType<typeof vi.fn>).mockImplementation((name: string) => {
     if (name === 'AiService') {
       return {
-        generateStructured: (request: { prompt: string }, schema: never, options?: { maxRepairAttempts?: number }) =>
-          runStructuredGeneration({
+        generateStructured: (
+          request: { prompt: string; uniqueModelId: string },
+          schema: never,
+          options?: { maxRepairAttempts?: number }
+        ) => {
+          usedModelIds.push(request.uniqueModelId)
+          return runStructuredGeneration({
             schema: schema,
             prompt: request.prompt,
             maxRepairAttempts: options?.maxRepairAttempts,
             generate
           })
+        }
       }
     }
     throw new Error(`Unexpected application.get(${name})`)
   })
-  return generate
+  return Object.assign(generate, { usedModelIds })
 }
 
 const writerDraft = (content: string) =>
@@ -120,11 +127,12 @@ describe('workshopChapterCycleJobHandler', () => {
         rootPath: kernel.rootPath,
         chapterId: 'ch-0001',
         instruction: '写第一章',
-        uniqueModelId: 'cherryai:test' as never
+        models: { writer: 'a:writer-model', guardian: 'a:guardian-model', reviewer: 'a:reviewer-model' } as never
       }) as never
     )
     expect(output).toEqual({ proposalId: 'cycle-1' })
     expect(generate).toHaveBeenCalledTimes(3)
+    expect(generate.usedModelIds).toEqual(['a:writer-model', 'a:guardian-model', 'a:reviewer-model'])
 
     const proposal = await kernel.readProposal('cycle-1')
     expect(proposal.rationale).toContain('机检与审校通过')
@@ -192,7 +200,7 @@ describe('workshopChapterCycleJobHandler', () => {
         rootPath: kernel.rootPath,
         chapterId: 'ch-0001',
         instruction: '写复活章',
-        uniqueModelId: 'cherryai:test' as never
+        models: { writer: 'cherryai:test', guardian: 'cherryai:test', reviewer: 'cherryai:test' } as never
       }) as never
     )
     expect(generate).toHaveBeenCalledTimes(5)
@@ -222,7 +230,7 @@ describe('workshopChapterCycleJobHandler', () => {
         rootPath: kernel.rootPath,
         chapterId: 'ch-0001',
         instruction: '写第一章',
-        uniqueModelId: 'cherryai:test' as never
+        models: { writer: 'cherryai:test', guardian: 'cherryai:test', reviewer: 'cherryai:test' } as never
       }) as never
     )
     expect(generate).toHaveBeenCalledTimes(6)
@@ -282,7 +290,7 @@ describe('workshopChapterCycleJobHandler', () => {
         rootPath: kernel.rootPath,
         chapterId: 'ch-0001',
         instruction: '写复活章',
-        uniqueModelId: 'cherryai:test' as never
+        models: { writer: 'cherryai:test', guardian: 'cherryai:test', reviewer: 'cherryai:test' } as never
       }) as never
     )
     expect(generate).toHaveBeenCalledTimes(6)

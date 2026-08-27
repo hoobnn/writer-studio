@@ -9,7 +9,7 @@ import type {
   WorkshopTimelineEntry
 } from '@shared/types/workshop'
 import { WORKSHOP_COLLECTIONS } from '@shared/types/workshop'
-import { FileText, X } from 'lucide-react'
+import { FileText, Settings2, X } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -17,6 +17,7 @@ import { WorkshopDiscussionPanel } from './WorkshopDiscussionPanel'
 import { WorkshopEntityEditor } from './WorkshopEntityEditor'
 import { WorkshopGeneratePanel } from './WorkshopGeneratePanel'
 import { WorkshopInvariantPanel } from './WorkshopInvariantPanel'
+import { WorkshopModelSettingsDialog } from './WorkshopModelSettingsDialog'
 import { WorkshopProposalPanel } from './WorkshopProposalPanel'
 import { WorkshopTimelinePanel } from './WorkshopTimelinePanel'
 
@@ -51,6 +52,7 @@ export function WorkshopWorkspace({ snapshot, onRefreshSnapshot, onClose }: Work
   const [busy, setBusy] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [exportMessage, setExportMessage] = useState('')
+  const [modelSettingsOpen, setModelSettingsOpen] = useState(false)
 
   const loadSideData = useCallback(async () => {
     const [entityResults, proposalResult, timelineResult] = await Promise.all([
@@ -150,8 +152,16 @@ export function WorkshopWorkspace({ snapshot, onRefreshSnapshot, onClose }: Work
   return (
     <div data-ui="workshop.workspace" className="flex h-full min-h-0 bg-background">
       <aside className="flex w-64 shrink-0 flex-col border-border border-r bg-sidebar">
-        <div className="flex items-center justify-between gap-2 border-border border-b px-3 py-2">
-          <span className="truncate font-medium text-sm">{snapshot.card.title}</span>
+        <div className="flex items-center justify-between gap-1 border-border border-b px-3 py-2">
+          <span className="min-w-0 flex-1 truncate font-medium text-sm">{snapshot.card.title}</span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={t('workshop.models.title')}
+            onClick={() => setModelSettingsOpen(true)}>
+            <Settings2 className="size-4" aria-hidden />
+          </Button>
           <Button
             type="button"
             variant="ghost"
@@ -161,6 +171,7 @@ export function WorkshopWorkspace({ snapshot, onRefreshSnapshot, onClose }: Work
             <X className="size-4" aria-hidden />
           </Button>
         </div>
+        <WorkshopModelSettingsDialog open={modelSettingsOpen} onOpenChange={setModelSettingsOpen} />
         <div className="min-h-0 flex-1 overflow-y-auto p-2">
           <div className="flex items-center justify-between px-1 py-1">
             <span className="font-medium text-muted-foreground text-xs uppercase">
