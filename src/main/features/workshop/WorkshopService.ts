@@ -23,6 +23,8 @@ import type {
   WorkshopGenerationStartInput,
   WorkshopGenerationStartResult,
   WorkshopGenerationStatusResult,
+  WorkshopInvariantReport,
+  WorkshopInvariantRunInput,
   WorkshopProjectCreateInput,
   WorkshopProjectSnapshot,
   WorkshopProposal,
@@ -37,10 +39,12 @@ import type {
   WorkshopTimelineListResult
 } from '@shared/types/workshop'
 
+import { collectWorkshopContext } from './workshopContext'
 import { createWorkshopDiscussionJobHandler } from './workshopDiscussionJobHandler'
 import { appendDiscussionMessage, readDiscussion } from './workshopDiscussionStore'
 import { WorkshopError, workshopErrorCodes } from './workshopErrors'
 import { createWorkshopGenerationJobHandler } from './workshopGenerationJobHandler'
+import { runWorkshopInvariants } from './workshopInvariants'
 import { WorkshopKernel } from './WorkshopKernel'
 import { resolveWorkshopGenerationModel } from './workshopModelPolicy'
 
@@ -257,6 +261,22 @@ export class WorkshopService extends BaseService {
 
   private isWorkshopJob(type: string): boolean {
     return type === 'workshop.generate-proposal' || type === 'workshop.discussion-turn'
+  }
+
+  async runInvariants(input: WorkshopInvariantRunInput): Promise<WorkshopInvariantReport> {
+    return this.withProject(input.rootPath, async (kernel) => {
+      const findings = runWorkshopInvariants(await collectWorkshopContext(kernel))
+      return {
+        headCommit: await kernel.headCommit(),
+        generatedAt: new Date().toISOString(),
+        findings,
+        counts: {
+          error: findings.filter((finding) => finding.severity === 'error').length,
+          warning: findings.filter((finding) => finding.severity === 'warning').length,
+          info: findings.filter((finding) => finding.severity === 'info').length
+        }
+      }
+    })
   }
 
   async listDiscussion(input: WorkshopDiscussionListInput): Promise<WorkshopDiscussionListResult> {

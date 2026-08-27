@@ -14,6 +14,8 @@ import {
   WorkshopGenerationStartInputSchema,
   WorkshopGenerationStartResultSchema,
   WorkshopGenerationStatusResultSchema,
+  WorkshopInvariantReportSchema,
+  WorkshopInvariantRunInputSchema,
   WorkshopProjectCreateInputSchema,
   WorkshopProjectOpenInputSchema,
   WorkshopProjectSnapshotSchema,
@@ -107,5 +109,9 @@ export const workshopRequestSchemas = {
   'workshop.discussion.send': defineRoute({
     input: WorkshopDiscussionSendInputSchema,
     output: WorkshopGenerationStartResultSchema
+  }),
+  'workshop.invariants.run': defineRoute({
+    input: WorkshopInvariantRunInputSchema,
+    output: WorkshopInvariantReportSchema
   })
 }

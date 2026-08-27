@@ -433,6 +433,50 @@ export type WorkshopGenerationCancelResult = z.infer<typeof WorkshopGenerationCa
 export const WorkshopGenerationOutputSchema = z.strictObject({ proposalId: WorkshopIdSchema })
 export type WorkshopGenerationOutput = z.infer<typeof WorkshopGenerationOutputSchema>
 
+// ---------------------------------------------------------------------------
+// 不变量检查(确定性,不调模型)
+// ---------------------------------------------------------------------------
+
+export const WorkshopInvariantRuleSchema = z.enum([
+  'invalid_reference',
+  'duplicate_volume_membership',
+  'character_life_conflict',
+  'character_resurrection',
+  'timeline_regression',
+  'foreshadowing_state_mismatch',
+  'foreshadowing_chronology',
+  'foreshadowing_overdue',
+  'missing_summary',
+  'plan_status_mismatch'
+])
+export type WorkshopInvariantRule = z.infer<typeof WorkshopInvariantRuleSchema>
+
+export const WorkshopFindingSchema = z.strictObject({
+  /** rule + 主体的稳定键(64 位十六进制),同一问题跨次运行保持一致。 */
+  key: z.string().regex(/^[a-f0-9]{64}$/),
+  rule: WorkshopInvariantRuleSchema,
+  severity: z.enum(['error', 'warning', 'info']),
+  detail: z.string().min(1).max(2_000),
+  chapterIds: z.array(WorkshopIdSchema).max(50).default([]),
+  entityIds: z.array(WorkshopIdSchema).max(50).default([])
+})
+export type WorkshopFinding = z.infer<typeof WorkshopFindingSchema>
+
+export const WorkshopInvariantReportSchema = z.strictObject({
+  headCommit: WorkshopCommitOidSchema,
+  generatedAt: WorkshopTimestampSchema,
+  findings: z.array(WorkshopFindingSchema).max(10_000),
+  counts: z.strictObject({
+    error: z.number().int().nonnegative(),
+    warning: z.number().int().nonnegative(),
+    info: z.number().int().nonnegative()
+  })
+})
+export type WorkshopInvariantReport = z.infer<typeof WorkshopInvariantReportSchema>
+
+export const WorkshopInvariantRunInputSchema = z.strictObject({ rootPath: z.string().trim().min(1) })
+export type WorkshopInvariantRunInput = z.infer<typeof WorkshopInvariantRunInputSchema>
+
 export const WorkshopDiscussionMessageSchema = z.strictObject({
   id: WorkshopIdSchema,
   role: z.enum(['user', 'assistant']),

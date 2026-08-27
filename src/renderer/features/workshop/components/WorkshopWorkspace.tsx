@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next'
 
 import { WorkshopDiscussionPanel } from './WorkshopDiscussionPanel'
 import { WorkshopGeneratePanel } from './WorkshopGeneratePanel'
+import { WorkshopInvariantPanel } from './WorkshopInvariantPanel'
 import { WorkshopProposalPanel } from './WorkshopProposalPanel'
 import { WorkshopTimelinePanel } from './WorkshopTimelinePanel'
 
@@ -267,6 +268,7 @@ export function WorkshopWorkspace({ snapshot, onRefreshSnapshot, onClose }: Work
               ) : null}
             </TabsTrigger>
             <TabsTrigger value="timeline">{t('workshop.timeline.title')}</TabsTrigger>
+            <TabsTrigger value="invariants">{t('workshop.invariants.title')}</TabsTrigger>
           </TabsList>
           <TabsContent value="discussion" className="flex min-h-0 flex-1 flex-col">
             <WorkshopDiscussionPanel rootPath={rootPath} onTurnFinished={refreshAll} />
@@ -288,6 +290,9 @@ export function WorkshopWorkspace({ snapshot, onRefreshSnapshot, onClose }: Work
                 })
               }
             />
+          </TabsContent>
+          <TabsContent value="invariants" className="flex min-h-0 flex-1 flex-col">
+            <WorkshopInvariantPanel rootPath={rootPath} headCommit={snapshot.head} />
           </TabsContent>
           <TabsContent value="timeline" className="flex min-h-0 flex-1 flex-col">
             <WorkshopTimelinePanel
