@@ -1,5 +1,5 @@
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
-import react from '@vitejs/plugin-react-swc'
+import react from '@vitejs/plugin-react'
 import { CodeInspectorPlugin } from 'code-inspector-plugin'
 import { defineConfig } from 'electron-vite'
 import { readFileSync } from 'fs'
@@ -107,11 +107,7 @@ export default defineConfig({
     }
   },
   preload: {
-    plugins: [
-      react({
-        tsDecorators: true
-      })
-    ],
+    plugins: [react()],
     resolve: {
       alias: {
         '@shared': resolve('src/shared')
@@ -147,12 +143,11 @@ export default defineConfig({
         target: 'react',
         autoCodeSplitting: true,
         routesDirectory: resolve('src/renderer/routes'),
-        generatedRouteTree: resolve('src/renderer/routeTree.gen.ts')
+        generatedRouteTree: resolve('src/renderer/routeTree.gen.ts'),
+        routeFileIgnorePattern: '(__tests__|\\.test\\.)'
       }),
       (async () => (await import('@tailwindcss/vite')).default())(),
-      react({
-        tsDecorators: true
-      }),
+      react(),
       ...(isDev ? [CodeInspectorPlugin({ bundler: 'vite' })] : []), // 只在开发环境下启用 CodeInspectorPlugin
       ...visualizerPlugin('renderer')
     ],
@@ -176,10 +171,7 @@ export default defineConfig({
       }
     },
     optimizeDeps: {
-      exclude: ['pyodide'],
-      esbuildOptions: {
-        target: 'esnext' // for dev
-      }
+      exclude: ['pyodide']
     },
     worker: {
       format: 'es'
@@ -202,6 +194,9 @@ export default defineConfig({
           warn(warning)
         },
         output: {
+          // rolldown-vite ignores the top-level `esbuild` option when oxc is
+          // active (plugin-react sets it), so strip license comments here.
+          ...(isProd ? { legalComments: 'none' as const } : {}),
           advancedChunks: {
             // Without this, groups recursively capture dependencies — React
             // itself ends up inside an icon bucket and every window preloads it.
@@ -225,7 +220,6 @@ export default defineConfig({
           }
         }
       }
-    },
-    esbuild: isProd ? { legalComments: 'none' } : {}
+    }
   }
 })
