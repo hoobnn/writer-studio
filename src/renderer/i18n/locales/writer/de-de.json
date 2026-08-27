@@ -46,6 +46,7 @@
   "workshop.generate.cancel": "Abbrechen",
   "workshop.generate.failed": "Erzeugung fehlgeschlagen",
   "workshop.generate.instruction_placeholder": "Sagen Sie der KI, was sie erzeugen soll, z. B. \"Entwirf den Protagonisten und drei harte Regeln dieser Welt\"",
+  "workshop.generate.role_guardian": "Kontinuitätswächter",
   "workshop.generate.role_planner": "Planer",
   "workshop.generate.role_writer": "Autor",
   "workshop.generate.running": "Wird erzeugt… das Ergebnis erscheint unten als Vorschlag",

@@ -46,6 +46,7 @@
   "workshop.generate.cancel": "Annuler",
   "workshop.generate.failed": "Échec de la génération",
   "workshop.generate.instruction_placeholder": "Dites à l'IA quoi produire, p. ex. « Conçois le protagoniste et trois règles strictes de ce monde »",
+  "workshop.generate.role_guardian": "Gardien",
   "workshop.generate.role_planner": "Concepteur",
   "workshop.generate.role_writer": "Rédacteur",
   "workshop.generate.running": "Génération en cours… le résultat apparaîtra ci-dessous sous forme de proposition",

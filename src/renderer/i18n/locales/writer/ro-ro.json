@@ -46,6 +46,7 @@
   "workshop.generate.cancel": "Anulează",
   "workshop.generate.failed": "Generarea a eșuat",
   "workshop.generate.instruction_placeholder": "Spune-i IA ce să producă, de ex. \"Proiectează protagonistul și trei reguli stricte ale acestei lumi\"",
+  "workshop.generate.role_guardian": "Gardian",
   "workshop.generate.role_planner": "Planificator",
   "workshop.generate.role_writer": "Scriitor",
   "workshop.generate.running": "Se generează… rezultatul va apărea mai jos ca propunere",

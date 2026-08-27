@@ -42,6 +42,43 @@ export const WorkshopPlannerOutputSchema = z.strictObject({
 })
 export type WorkshopPlannerOutput = z.infer<typeof WorkshopPlannerOutputSchema>
 
+const LEDGER_COLLECTIONS = [
+  'ledger/facts',
+  'ledger/foreshadowing',
+  'ledger/summaries',
+  'ledger/states',
+  'ledger/events'
+] as const
+
+const ledgerWriteVariants = LEDGER_COLLECTIONS.map((collection) =>
+  z.strictObject({
+    collection: z.literal(collection),
+    id: WorkshopIdSchema,
+    data: WORKSHOP_COLLECTION_DATA_SCHEMAS[collection]
+  })
+)
+
+/** 守卫只允许写台账集合:从正文提取的事实/伏笔流转/状态/摘要不允许触碰设定与大纲。 */
+export const WorkshopGuardianOutputSchema = z.strictObject({
+  title: z.string().trim().min(1).max(200),
+  rationale: z.string().max(20_000).default(''),
+  chapterId: WorkshopIdSchema,
+  entities: z
+    .array(
+      z.discriminatedUnion(
+        'collection',
+        ledgerWriteVariants as unknown as [(typeof ledgerWriteVariants)[number], ...typeof ledgerWriteVariants]
+      )
+    )
+    .min(1)
+    .max(100),
+  removals: z
+    .array(z.strictObject({ collection: WorkshopCollectionSchema, id: WorkshopIdSchema }))
+    .max(50)
+    .default([])
+})
+export type WorkshopGuardianOutput = z.infer<typeof WorkshopGuardianOutputSchema>
+
 export const WorkshopWriterOutputSchema = z.strictObject({
   title: z.string().trim().min(1).max(200),
   rationale: z.string().max(20_000).default(''),
@@ -65,7 +102,7 @@ export type WorkshopDiscussionOutput = z.infer<typeof WorkshopDiscussionOutputSc
 
 interface BuildChangesetInput {
   proposalId: string
-  role: 'planner' | 'writer'
+  role: 'planner' | 'writer' | 'guardian'
   now: string
 }
 
@@ -79,8 +116,11 @@ function entityEnvelope(input: BuildChangesetInput, id: string, data: unknown): 
   }
 }
 
-/** 策划输出 → changeset:同一实体多次出现取最后一次;同时出现写与删时删除优先剔除写。 */
-export function buildPlannerChangeset(output: WorkshopPlannerOutput, input: BuildChangesetInput): WorkshopChangeset {
+/** 实体写入类输出(策划/守卫)→ changeset:同一实体取最后一次写入;同时出现写与删时删除优先。 */
+export function buildPlannerChangeset(
+  output: { entities: WorkshopEntityWriteOutput[]; removals: { collection: WorkshopCollection; id: string }[] },
+  input: BuildChangesetInput
+): WorkshopChangeset {
   const key = (collection: WorkshopCollection, id: string) => `${collection}/${id}`
   const writes = new Map<string, WorkshopChange>()
   for (const entity of output.entities) {

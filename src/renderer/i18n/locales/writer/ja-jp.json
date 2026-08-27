@@ -46,6 +46,7 @@
   "workshop.generate.cancel": "キャンセル",
   "workshop.generate.failed": "生成に失敗しました",
   "workshop.generate.instruction_placeholder": "AI に何を作らせるか伝えてください。例:「主人公とこの世界の3つの絶対ルールを設計して」",
+  "workshop.generate.role_guardian": "ガーディアン",
   "workshop.generate.role_planner": "プランナー",
   "workshop.generate.role_writer": "ライター",
   "workshop.generate.running": "生成中…結果は下に提案として表示されます",

@@ -272,7 +272,11 @@ export function WorkshopWorkspace({ snapshot, onRefreshSnapshot, onClose }: Work
             <WorkshopDiscussionPanel rootPath={rootPath} onTurnFinished={refreshAll} />
           </TabsContent>
           <TabsContent value="proposals" className="flex min-h-0 flex-1 flex-col">
-            <WorkshopGeneratePanel rootPath={rootPath} onProposalArrived={refreshAll} />
+            <WorkshopGeneratePanel
+              rootPath={rootPath}
+              selectedChapterId={selection?.type === 'chapter' ? selection.id : undefined}
+              onProposalArrived={refreshAll}
+            />
             <WorkshopProposalPanel
               rootPath={rootPath}
               proposals={proposals}

@@ -46,6 +46,7 @@
   "workshop.generate.cancel": "Ακύρωση",
   "workshop.generate.failed": "Η δημιουργία απέτυχε",
   "workshop.generate.instruction_placeholder": "Πείτε στην ΤΝ τι να παράγει, π.χ. «Σχεδίασε τον πρωταγωνιστή και τρεις αυστηρούς κανόνες αυτού του κόσμου»",
+  "workshop.generate.role_guardian": "Φύλακας συνέχειας",
   "workshop.generate.role_planner": "Σχεδιαστής",
   "workshop.generate.role_writer": "Συγγραφέας",
   "workshop.generate.running": "Δημιουργία… το αποτέλεσμα θα εμφανιστεί παρακάτω ως πρόταση",

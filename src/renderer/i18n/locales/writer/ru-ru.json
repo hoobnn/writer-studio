@@ -46,6 +46,7 @@
   "workshop.generate.cancel": "Отмена",
   "workshop.generate.failed": "Не удалось создать",
   "workshop.generate.instruction_placeholder": "Скажите ИИ, что создать, например: «Спроектируй главного героя и три жёстких правила этого мира»",
+  "workshop.generate.role_guardian": "Хранитель",
   "workshop.generate.role_planner": "Проектировщик",
   "workshop.generate.role_writer": "Писатель",
   "workshop.generate.running": "Создание… результат появится ниже в виде предложения",

@@ -4,9 +4,14 @@ import path from 'node:path'
 
 import { BaseService } from '@main/core/lifecycle/BaseService'
 import { workshopErrorCodes } from '@shared/ipc/errors/workshop'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { WorkshopService } from '../WorkshopService'
+
+vi.mock('@application', async () => {
+  const mod = await import('@test-mocks/main/application')
+  return mod.mockApplicationFactory()
+})
 
 const parents: string[] = []
 async function newParent(): Promise<string> {
@@ -18,6 +23,7 @@ async function newParent(): Promise<string> {
 describe('WorkshopService', () => {
   beforeEach(() => {
     BaseService.resetInstances()
+    vi.clearAllMocks()
   })
 
   afterEach(async () => {
@@ -63,5 +69,52 @@ describe('WorkshopService', () => {
     const { entries } = await service.listTimeline({ rootPath, limit: 10 })
     expect(entries.map((entry) => entry.kind)).toEqual(['proposal_applied', 'init'])
     expect((await service.openProject(rootPath)).chapterIds).toEqual(['ch-001'])
+  })
+
+  it('章节提案应用后自动入队守卫任务;守卫提案应用不再触发', async () => {
+    const { mockJobManager } = await import('@test-mocks/main/application')
+    const service = new WorkshopService()
+    const parentDirectory = await newParent()
+    const { rootPath } = await service.createProject({ parentDirectory, title: '守卫触发' })
+
+    const chapterProposal = await service.createProposal({
+      rootPath,
+      title: '写第一章',
+      origin: { kind: 'ai', role: 'writer' },
+      changes: [{ op: 'write_chapter', chapterId: 'ch-001', content: '正文。' }]
+    })
+    await service.applyProposal({ rootPath, id: chapterProposal.id })
+    const enqueueCalls = mockJobManager.enqueue.mock.calls as unknown as [
+      string,
+      { role: string; chapterId?: string }
+    ][]
+    const guardianCalls = enqueueCalls.filter(
+      ([type, payload]) => type === 'workshop.generate-proposal' && payload.role === 'guardian'
+    )
+    expect(guardianCalls).toHaveLength(1)
+    expect(guardianCalls[0][1].chapterId).toBe('ch-001')
+
+    mockJobManager.enqueue.mockClear()
+    const guardianProposal = await service.createProposal({
+      rootPath,
+      title: '台账更新',
+      origin: { kind: 'ai', role: 'guardian' },
+      changes: [
+        {
+          op: 'write_entity',
+          collection: 'ledger/summaries',
+          id: 'ch-001',
+          entity: {
+            schemaVersion: 1,
+            id: 'ch-001',
+            origin: { kind: 'ai', role: 'guardian' },
+            updatedAt: new Date().toISOString(),
+            data: { summary: '第一章摘要' }
+          }
+        }
+      ]
+    })
+    await service.applyProposal({ rootPath, id: guardianProposal.id })
+    expect(mockJobManager.enqueue).not.toHaveBeenCalled()
   })
 })

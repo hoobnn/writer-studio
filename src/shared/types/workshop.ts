@@ -410,7 +410,7 @@ export type WorkshopTimelineListResult = z.infer<typeof WorkshopTimelineListResu
 
 export const WorkshopGenerationStartInputSchema = z.strictObject({
   rootPath: z.string().trim().min(1),
-  role: z.enum(['planner', 'writer']),
+  role: z.enum(['planner', 'writer', 'guardian']),
   instruction: z.string().trim().min(1).max(20_000),
   uniqueModelId: UniqueModelIdSchema.optional(),
   /** writer 角色的目标章节;省略则由模型在输出中指定(可为新章节)。 */

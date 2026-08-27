@@ -5,6 +5,7 @@ import path from 'node:path'
 import { application } from '@application'
 import { modelService } from '@data/services/ModelService'
 import { providerService } from '@data/services/ProviderService'
+import { loggerService } from '@logger'
 import { KeyedMutex } from '@main/core/concurrency/KeyedMutex'
 import { BaseService, DependsOn, Injectable, Phase, ServicePhase } from '@main/core/lifecycle'
 import type {
@@ -42,6 +43,8 @@ import { WorkshopError, workshopErrorCodes } from './workshopErrors'
 import { createWorkshopGenerationJobHandler } from './workshopGenerationJobHandler'
 import { WorkshopKernel } from './WorkshopKernel'
 import { resolveWorkshopGenerationModel } from './workshopModelPolicy'
+
+const logger = loggerService.withContext('workshopService')
 
 function sanitizeProjectDirectory(title: string): string {
   const sanitized = title
@@ -166,7 +169,36 @@ export class WorkshopService extends BaseService {
   }
 
   async applyProposal(input: WorkshopProposalReadInput): Promise<WorkshopTimelineEntry> {
-    return this.withProject(input.rootPath, (kernel) => kernel.applyProposal(input.id))
+    const { entry, guardianChapterIds } = await this.withProject(input.rootPath, async (kernel) => {
+      const proposal = await kernel.readProposal(input.id)
+      const changedChapterIds =
+        proposal.status === 'pending' && proposal.origin.role !== 'guardian'
+          ? (await kernel.readProposalChanges(input.id))
+              .map((change) => /^manuscript\/(.+)\.md$/.exec(change.filepath)?.[1])
+              .filter((chapterId): chapterId is string => Boolean(chapterId))
+          : []
+      return { entry: await kernel.applyProposal(input.id), guardianChapterIds: changedChapterIds }
+    })
+    // 正文反哺:章节入正史后自动入队守卫任务,产出台账更新提案(仍过人类评审关)。
+    for (const chapterId of guardianChapterIds) {
+      this.enqueueGuardianTurn(input.rootPath, chapterId)
+    }
+    return entry
+  }
+
+  private enqueueGuardianTurn(rootPath: string, chapterId: string): void {
+    try {
+      const uniqueModelId = this.resolveGenerationModel(undefined)
+      application.get('JobManager').enqueue('workshop.generate-proposal', {
+        rootPath,
+        role: 'guardian',
+        instruction: `提取第 ${chapterId} 章的台账更新`,
+        uniqueModelId,
+        chapterId
+      })
+    } catch (error) {
+      logger.warn('failed to enqueue guardian turn', { chapterId, error: String(error) })
+    }
   }
 
   async rejectProposal(input: WorkshopProposalReadInput): Promise<WorkshopProposal> {

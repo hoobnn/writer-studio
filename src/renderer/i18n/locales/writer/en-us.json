@@ -46,6 +46,7 @@
   "workshop.generate.cancel": "Cancel",
   "workshop.generate.failed": "Generation failed",
   "workshop.generate.instruction_placeholder": "Tell the AI what to produce, e.g. \"Design the protagonist and three hard rules of this world\"",
+  "workshop.generate.role_guardian": "Continuity guard",
   "workshop.generate.role_planner": "Planner",
   "workshop.generate.role_writer": "Writer",
   "workshop.generate.running": "Generating… the result will appear below as a proposal",

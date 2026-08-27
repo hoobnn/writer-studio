@@ -160,6 +160,44 @@ describe('workshopGenerationJobHandler', () => {
     expect(plan.data.status).toBe('drafted')
   })
 
+  it('守卫输出限定台账集合并可应用', async () => {
+    const kernel = await newProject()
+    await kernel.commitCanon({
+      title: '第一章入正史',
+      origin: { kind: 'human' },
+      changes: [{ op: 'write_chapter', chapterId: 'ch-0001', content: '林远抵达灯塔,亲手埋下怀表。' }]
+    })
+    stubAiService([
+      JSON.stringify({
+        title: '第一章台账',
+        chapterId: 'ch-0001',
+        entities: [
+          { collection: 'ledger/summaries', id: 'ch-0001', data: { summary: '林远抵达灯塔并埋下怀表。' } },
+          {
+            collection: 'ledger/facts',
+            id: 'fact-watch-buried',
+            data: { subject: '怀表', predicate: '被埋在灯塔下', sourceChapterId: 'ch-0001' }
+          }
+        ]
+      })
+    ])
+    const handler = createWorkshopGenerationJobHandler(new KeyedMutex())
+    await handler.execute(
+      jobContext('job-guardian-1', {
+        rootPath: kernel.rootPath,
+        role: 'guardian',
+        instruction: '提取台账',
+        uniqueModelId: 'cherryai:test-model' as never,
+        chapterId: 'ch-0001'
+      }) as never
+    )
+    await kernel.applyProposal('job-guardian-1')
+    const summary = await kernel.readEntity<{ summary: string }>('ledger/summaries', 'ch-0001')
+    expect(summary.data.summary).toBe('林远抵达灯塔并埋下怀表。')
+    expect(summary.origin).toMatchObject({ kind: 'ai', role: 'guardian', proposalId: 'job-guardian-1' })
+    expect((await kernel.listEntities('ledger/facts')).map((entity) => entity.id)).toEqual(['fact-watch-buried'])
+  })
+
   it('提案已存在时幂等返回,不再调用模型', async () => {
     const kernel = await newProject()
     await kernel.createProposal({

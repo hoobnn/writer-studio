@@ -13,6 +13,7 @@ import {
 import {
   buildPlannerChangeset,
   buildWriterChangeset,
+  WorkshopGuardianOutputSchema,
   WorkshopPlannerOutputSchema,
   WorkshopWriterOutputSchema
 } from './workshopAgentOutput'
@@ -28,7 +29,7 @@ declare module '@main/core/job/jobRegistry' {
 
 export interface WorkshopGenerationJobPayload {
   rootPath: string
-  role: 'planner' | 'writer'
+  role: 'planner' | 'writer' | 'guardian'
   instruction: string
   uniqueModelId: UniqueModelId
   chapterId?: string
@@ -56,7 +57,7 @@ export function createWorkshopGenerationJobHandler(projectLock: KeyedMutex): Job
         if (await kernel.proposalExists(proposalId)) return null
 
         return collectWorkshopContext(kernel, {
-          targetChapterId: ctx.input.role === 'writer' ? ctx.input.chapterId : undefined
+          targetChapterId: ctx.input.role === 'planner' ? undefined : ctx.input.chapterId
         })
       })
       if (context === null) {
@@ -90,6 +91,13 @@ export function createWorkshopGenerationJobHandler(projectLock: KeyedMutex): Job
         const { object } = await application
           .get('AiService')
           .generateStructured(aiRequest, WorkshopPlannerOutputSchema, { maxRepairAttempts: 1 })
+        title = object.title
+        rationale = object.rationale
+        changes = buildPlannerChangeset(object, mapping)
+      } else if (ctx.input.role === 'guardian') {
+        const { object } = await application
+          .get('AiService')
+          .generateStructured(aiRequest, WorkshopGuardianOutputSchema, { maxRepairAttempts: 1 })
         title = object.title
         rationale = object.rationale
         changes = buildPlannerChangeset(object, mapping)

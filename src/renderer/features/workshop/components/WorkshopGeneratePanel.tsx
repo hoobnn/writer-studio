@@ -8,14 +8,15 @@ import { useTranslation } from 'react-i18next'
 
 interface WorkshopGeneratePanelProps {
   rootPath: string
+  selectedChapterId?: string
   onProposalArrived: () => Promise<void>
 }
 
 const POLL_INTERVAL_MS = 2_000
 
-export function WorkshopGeneratePanel({ rootPath, onProposalArrived }: WorkshopGeneratePanelProps) {
+export function WorkshopGeneratePanel({ rootPath, selectedChapterId, onProposalArrived }: WorkshopGeneratePanelProps) {
   const { t } = useTranslation()
-  const [role, setRole] = useState<'planner' | 'writer'>('planner')
+  const [role, setRole] = useState<'planner' | 'writer' | 'guardian'>('planner')
   const [instruction, setInstruction] = useState('')
   const [jobId, setJobId] = useState<string>()
   const [errorMessage, setErrorMessage] = useState('')
@@ -62,7 +63,8 @@ export function WorkshopGeneratePanel({ rootPath, onProposalArrived }: WorkshopG
       const snapshot = await ipcApi.request('workshop.generation.start', {
         rootPath,
         role,
-        instruction: normalized
+        instruction: normalized,
+        ...(role !== 'planner' && selectedChapterId ? { chapterId: selectedChapterId } : {})
       })
       setJobId(snapshot.id)
     } catch (error) {
@@ -79,7 +81,7 @@ export function WorkshopGeneratePanel({ rootPath, onProposalArrived }: WorkshopG
   return (
     <div className="space-y-2 border-border border-b p-3">
       <div className="flex items-center gap-1">
-        {(['planner', 'writer'] as const).map((candidate) => (
+        {(['planner', 'writer', 'guardian'] as const).map((candidate) => (
           <Button
             key={candidate}
             type="button"

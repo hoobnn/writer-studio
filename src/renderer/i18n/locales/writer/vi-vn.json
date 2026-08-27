@@ -46,6 +46,7 @@
   "workshop.generate.cancel": "Hủy",
   "workshop.generate.failed": "Tạo thất bại",
   "workshop.generate.instruction_placeholder": "Cho AI biết cần tạo gì, ví dụ: \"Thiết kế nhân vật chính và ba quy tắc cứng của thế giới này\"",
+  "workshop.generate.role_guardian": "Người gác",
   "workshop.generate.role_planner": "Biên kịch",
   "workshop.generate.role_writer": "Người viết",
   "workshop.generate.running": "Đang tạo… kết quả sẽ xuất hiện bên dưới dưới dạng đề xuất",

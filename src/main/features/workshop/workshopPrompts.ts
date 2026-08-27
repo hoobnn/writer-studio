@@ -96,10 +96,24 @@ const WRITER_CONTRACT = [
   '若资料中存在该章节的章计划,正文必须贴合其 goal 与 beats,并给出 planStatus。'
 ].join('\n')
 
+const GUARDIAN_CONTRACT = [
+  '输出契约(JSON 对象):',
+  '{ "title": 提案标题, "rationale": 提取依据说明, "chapterId": 被总结的章节id, "entities": [台账写入…], "removals": [可省略] }',
+  '实体写入形如 { "collection": 集合名, "id": 实体id, "data": {…} },集合名限定为台账五类:',
+  'ledger/summaries(id 必须等于 chapterId): { summary, requirementAssessments[] } —— 每次必写本章摘要。',
+  'ledger/facts: { subject, predicate, detail, sourceChapterId, usedInChapterIds[] } —— 只记录正文里已成为既成事实的信息。',
+  "ledger/foreshadowing: { description, plantedChapterId?, dueChapterId?, resolvedChapterId?, status } —— 新埋伏笔记 planted,已回收的把 status 改为 'resolved'。",
+  'ledger/states: { timelineId, characterId, chapterId, sequence, location, lifeStatus, transitionExplanation, evidence } —— characterId 必须引用既有人物 id。',
+  'ledger/events: { timelineId, chapterId, sequence, storyTime(数字), label, evidence }',
+  '更新既有条目沿用其 id;一切内容必须有正文证据,不得臆测。'
+].join('\n')
+
 const ROLE_GUIDANCE = {
   planner:
     '你是策划。依据作者要求产出结构化的故事资料提案:设定(人物/世界观/规则)、分卷、故事弧或章节计划。先想清楚因果与结构,再落成实体。',
-  writer: '你是写手。依据章计划与既有正史撰写章节正文,续写时不重复已经发生的内容,输出可直接入稿的成品文字。'
+  writer: '你是写手。依据章计划与既有正史撰写章节正文,续写时不重复已经发生的内容,输出可直接入稿的成品文字。',
+  guardian:
+    '你是连续性守卫。通读目标章节正文,把其中已成为正史的信息提取进台账:本章摘要、新事实、伏笔的埋设与回收、人物位置与生死状态、时间线事件。只提取,不创作。'
 } as const
 
 const DISCUSSION_HISTORY_BUDGET_CHARS = 8_000
@@ -154,8 +168,14 @@ export interface WorkshopGenerationPrompt {
   prompt: string
 }
 
+const ROLE_CONTRACTS = {
+  planner: PLANNER_CONTRACT,
+  writer: WRITER_CONTRACT,
+  guardian: GUARDIAN_CONTRACT
+} as const
+
 export function buildWorkshopGenerationPrompt(input: {
-  role: 'planner' | 'writer'
+  role: 'planner' | 'writer' | 'guardian'
   instruction: string
   context: WorkshopContextData
 }): WorkshopGenerationPrompt {
@@ -166,7 +186,7 @@ export function buildWorkshopGenerationPrompt(input: {
     'PROJECT_DATA_BEGIN',
     serializeWorkshopContext(input.context),
     'PROJECT_DATA_END',
-    input.role === 'planner' ? PLANNER_CONTRACT : WRITER_CONTRACT
+    ROLE_CONTRACTS[input.role]
   ].join('\n\n')
   return { system: COMMON_SYSTEM, prompt }
 }
