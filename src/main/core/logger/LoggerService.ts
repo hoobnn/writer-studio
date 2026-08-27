@@ -78,6 +78,11 @@ export class LoggerService {
     // source of truth (see src/main/core/paths/constants.ts).
     this.logsDir = LOGS_DIR
 
+    // 终端断开后 console.* 写 stdout/stderr 会异步抛 EIO/EPIPE,
+    // 流上无 error 监听会变成 uncaughtException 打崩主进程,这里吞掉
+    process.stdout?.on('error', () => {})
+    process.stderr?.on('error', () => {})
+
     // env variables, only used in dev / diagnostics (CS_DIAGNOSTICS) mode
     // only affect console output, not affect file output
     if (DEV_LOGGING) {
