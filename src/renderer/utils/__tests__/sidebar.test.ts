@@ -128,8 +128,8 @@ describe('sidebar config helpers', () => {
   })
 
   it('resolves menu paths and active items with the paintings provider route', () => {
-    expect(getSidebarMenuPath('writer', 'zhipu')).toBe('/app/writer')
-    expect(resolveSidebarActiveItem('/app/writer')).toBe('writer')
+    expect(getSidebarMenuPath('writer', 'zhipu')).toBe('/app/workshop')
+    expect(resolveSidebarActiveItem('/app/workshop')).toBe('writer')
     expect(getSidebarMenuPath('paintings', 'zhipu')).toBe('/app/paintings/zhipu')
     expect(resolveSidebarActiveItem('/app/paintings/zhipu')).toBe('paintings')
   })

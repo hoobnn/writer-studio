@@ -73,7 +73,7 @@ describe('MainWindowContent', () => {
       expect(tabsProviderModule.initialDefaultTab).toMatchObject({
         id: 'home',
         type: 'route',
-        url: '/app/writer'
+        url: '/app/workshop'
       })
       expect(screen.getByTestId('app-shell')).toBeInTheDocument()
       expect(screen.queryByTestId('onboarding-page')).not.toBeInTheDocument()

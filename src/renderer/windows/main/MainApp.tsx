@@ -30,7 +30,7 @@ const WRITER_DEFAULT_TAB: Tab = {
   // protects `home` from hibernation, which is essential for live Writer state.
   id: 'home',
   type: 'route',
-  url: '/app/writer',
+  url: '/app/workshop',
   title: '',
   lastAccessTime: Date.now(),
   isDormant: false
