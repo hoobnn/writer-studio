@@ -1,4 +1,4 @@
-import { Badge, Button } from '@cherrystudio/ui'
+import { Badge, Button, ConfirmDialog, Scrollbar } from '@cherrystudio/ui'
 import type { WorkshopTimelineEntry } from '@shared/types/workshop'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -12,13 +12,12 @@ interface WorkshopTimelinePanelProps {
 
 export function WorkshopTimelinePanel({ headCommit, entries, busy, onRollback }: WorkshopTimelinePanelProps) {
   const { t } = useTranslation()
-  const [confirmingCommit, setConfirmingCommit] = useState<string>()
+  const [confirmingEntry, setConfirmingEntry] = useState<WorkshopTimelineEntry>()
 
   return (
-    <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto p-2">
+    <Scrollbar className="min-h-0 flex-1 space-y-1.5 p-2">
       {entries.map((entry) => {
         const isHead = entry.commit === headCommit
-        const confirming = confirmingCommit === entry.commit
         return (
           <div key={entry.commit} className="rounded-lg border border-border bg-card px-3 py-2">
             <div className="flex items-center gap-2">
@@ -32,30 +31,13 @@ export function WorkshopTimelinePanel({ headCommit, entries, busy, onRollback }:
               </span>
               {isHead ? (
                 <span className="text-muted-foreground text-xs">{t('workshop.timeline.current')}</span>
-              ) : confirming ? (
-                <div className="flex gap-1">
-                  <Button type="button" size="sm" variant="ghost" onClick={() => setConfirmingCommit(undefined)}>
-                    {t('workshop.timeline.cancel')}
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="destructive"
-                    loading={busy}
-                    onClick={() => {
-                      setConfirmingCommit(undefined)
-                      void onRollback(entry.commit)
-                    }}>
-                    {t('workshop.timeline.confirm_rollback')}
-                  </Button>
-                </div>
               ) : (
                 <Button
                   type="button"
                   size="sm"
                   variant="ghost"
                   disabled={busy}
-                  onClick={() => setConfirmingCommit(entry.commit)}>
+                  onClick={() => setConfirmingEntry(entry)}>
                   {t('workshop.timeline.rollback')}
                 </Button>
               )}
@@ -63,6 +45,23 @@ export function WorkshopTimelinePanel({ headCommit, entries, busy, onRollback }:
           </div>
         )
       })}
-    </div>
+      <ConfirmDialog
+        open={Boolean(confirmingEntry)}
+        onOpenChange={(open) => {
+          if (!open) setConfirmingEntry(undefined)
+        }}
+        title={t('workshop.timeline.rollback')}
+        description={
+          confirmingEntry ? t('workshop.timeline.rollback_description', { title: confirmingEntry.title }) : ''
+        }
+        confirmText={t('workshop.timeline.confirm_rollback')}
+        cancelText={t('common.cancel')}
+        destructive
+        confirmLoading={busy}
+        onConfirm={() => {
+          if (confirmingEntry) void onRollback(confirmingEntry.commit)
+        }}
+      />
+    </Scrollbar>
   )
 }
