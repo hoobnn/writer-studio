@@ -194,7 +194,7 @@ const AboutSettings: FC = () => {
             aria-label={t('settings.about.repository')}
             onClick={() => onOpenWebsite('https://github.com/CherryHQ/cherry-studio')}
             className="inline-flex items-center justify-center rounded-md p-1 text-foreground transition-colors hover:bg-muted">
-            <Github className="size-5" />
+            <Github aria-hidden="true" className="size-5" />
           </button>
         </SettingTitle>
 
@@ -207,19 +207,21 @@ const AboutSettings: FC = () => {
               aria-label={DISTRIBUTION.productName}
               onClick={() => onOpenWebsite('https://github.com/CherryHQ/cherry-studio')}
               className="relative cursor-pointer">
-              {appUpdateState.downloading && appUpdateState.downloadProgress > 0 && (
-                <div className="-top-0.5 -left-0.5 pointer-events-none absolute">
-                  <CircularProgress
-                    value={appUpdateState.downloadProgress}
-                    size={76}
-                    strokeWidth={4}
-                    shape="square"
-                    className="stroke-transparent"
-                    progressClassName="stroke-[#67ad5b]"
-                  />
-                </div>
-              )}
-              <LogoAvatar logo={AppLogo} size={72} className="rounded-full" />
+              <span aria-hidden="true">
+                {appUpdateState.downloading && appUpdateState.downloadProgress > 0 && (
+                  <div className="-top-0.5 -left-0.5 pointer-events-none absolute">
+                    <CircularProgress
+                      value={appUpdateState.downloadProgress}
+                      size={76}
+                      strokeWidth={4}
+                      shape="square"
+                      className="stroke-transparent"
+                      progressClassName="stroke-[#67ad5b]"
+                    />
+                  </div>
+                )}
+                <LogoAvatar logo={AppLogo} size={72} className="rounded-full" alt="" />
+              </span>
             </button>
 
             <div className="flex min-h-18 flex-col items-start justify-center">

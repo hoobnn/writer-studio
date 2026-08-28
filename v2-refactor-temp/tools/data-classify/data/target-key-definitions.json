@@ -171,11 +171,11 @@
       "type": "PreferenceTypes.SidebarFavoriteItem[]",
       "defaultValue": [
         {
-          "id": "assistants",
+          "id": "agents",
           "type": "app"
         },
         {
-          "id": "agents",
+          "id": "assistants",
           "type": "app"
         },
         {
