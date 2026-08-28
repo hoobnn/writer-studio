@@ -102,7 +102,7 @@ interface AgentMessageListParams {
   imageActionConsumer?: 'capture'
   messageNavigation: string
   workspacePath?: string
-  messageTail?: MessageListState['messageTail']
+  messageTails?: MessageListState['messageTails']
 }
 
 /**
@@ -157,7 +157,7 @@ export function useAgentMessageListProviderValue({
   imageActionConsumer,
   messageNavigation,
   workspacePath,
-  messageTail
+  messageTails
 }: AgentMessageListParams): MessageListProviderValue {
   const { t } = useTranslation()
   const sessionId = useMemo(() => extractAgentSessionIdFromTopicId(topic.id), [topic.id])
@@ -353,7 +353,7 @@ export function useAgentMessageListProviderValue({
       partsByMessageId: displayPartsByMessageId,
       streamingLayers: displayStreamingLayers,
       activeTurnStatus: normalInteractionsEnabled ? renderActiveTurnStatus : undefined,
-      messageTail: normalInteractionsEnabled ? messageTail : undefined,
+      messageTails: normalInteractionsEnabled ? messageTails : undefined,
       isInitialLoading: isLoading && messageItems.length === 0,
       hasOlder,
       messageNavigation,
@@ -375,7 +375,7 @@ export function useAgentMessageListProviderValue({
       messageUiStateCache.getMessageUiState,
       messageNavigation,
       messageItems,
-      messageTail,
+      messageTails,
       normalInteractionsEnabled,
       displayPartsByMessageId,
       renderActiveTurnStatus,

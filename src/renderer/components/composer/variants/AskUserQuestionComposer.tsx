@@ -1,5 +1,9 @@
 import { Button, Checkbox, Input } from '@cherrystudio/ui'
 import { loggerService } from '@logger'
+import type {
+  AskUserQuestionAnswer,
+  AskUserQuestionItem
+} from '@renderer/components/chat/messages/tools/shared/agentToolTypes'
 import type { MessageToolApprovalInput } from '@renderer/components/chat/messages/types'
 import { toast } from '@renderer/services/toast'
 import { cn } from '@renderer/utils/style'
@@ -25,6 +29,14 @@ type AskUserQuestionComposerOverrideOptions = {
   onRespond: (input: MessageToolApprovalInput) => void | Promise<void>
 }
 
+interface QuestionComposerProps {
+  questions: AskUserQuestionItem[]
+  onSubmit: (answers: AskUserQuestionAnswer) => void | Promise<void>
+  onDismiss: () => void | Promise<void>
+  errorContext?: Record<string, unknown>
+  className?: string
+}
+
 type AnswersByIndex = Record<number, string[]>
 
 export function createAskUserQuestionComposerOverride({
@@ -39,8 +51,35 @@ export function createAskUserQuestionComposerOverride({
 }
 
 export default function AskUserQuestionComposer({ request, onRespond, className }: AskUserQuestionComposerProps) {
+  return (
+    <QuestionComposer
+      questions={request.input.questions}
+      onSubmit={(answers) =>
+        onRespond({
+          match: request.match,
+          approved: true,
+          updatedInput: { ...request.input, answers }
+        })
+      }
+      onDismiss={() =>
+        onRespond({
+          match: request.match,
+          approved: false,
+          reason: 'User dismissed AskUserQuestion'
+        })
+      }
+      errorContext={{
+        approvalId: request.approvalId,
+        messageId: request.messageId,
+        toolCallId: request.toolCallId
+      }}
+      className={className}
+    />
+  )
+}
+
+export function QuestionComposer({ questions, onSubmit, onDismiss, errorContext, className }: QuestionComposerProps) {
   const { t } = useTranslation()
-  const questions = request.input.questions
   const [currentIndex, setCurrentIndex] = useState(0)
   const [selectedAnswers, setSelectedAnswers] = useState<AnswersByIndex>({})
   const [customAnswers, setCustomAnswers] = useState<Record<number, string>>({})
@@ -89,48 +128,33 @@ export default function AskUserQuestionComposer({ request, onRespond, className 
   )
 
   const respond = useCallback(
-    async (input: MessageToolApprovalInput) => {
+    async (action: () => void | Promise<void>) => {
       setIsSubmitting(true)
       try {
-        await onRespond(input)
+        await action()
       } catch (error) {
-        logger.error('Failed to send ask-user-question response', error as Error, {
-          approvalId: request.approvalId,
-          messageId: request.messageId,
-          toolCallId: request.toolCallId
-        })
+        logger.error('Failed to send question response', error as Error, errorContext)
         toast.error(t('agent.toolPermission.error.sendFailed'))
         setIsSubmitting(false)
       }
     },
-    [onRespond, request.approvalId, request.messageId, request.toolCallId, t]
+    [errorContext, t]
   )
 
   const submitAnswers = useCallback(
     async (answersByIndex: AnswersByIndex = selectedAnswers) => {
       if (!hasAnyAnswer(answersByIndex) || isSubmitting) return
 
-      await respond({
-        match: request.match,
-        approved: true,
-        updatedInput: {
-          ...request.input,
-          answers: buildAnswers(answersByIndex)
-        }
-      })
+      await respond(() => onSubmit(buildAnswers(answersByIndex)))
     },
-    [buildAnswers, hasAnyAnswer, isSubmitting, request.input, request.match, respond, selectedAnswers]
+    [buildAnswers, hasAnyAnswer, isSubmitting, onSubmit, respond, selectedAnswers]
   )
 
   const handleDismiss = useCallback(async () => {
     if (isSubmitting) return
 
-    await respond({
-      match: request.match,
-      approved: false,
-      reason: 'User dismissed AskUserQuestion'
-    })
-  }, [isSubmitting, request.match, respond])
+    await respond(onDismiss)
+  }, [isSubmitting, onDismiss, respond])
 
   const completeCurrentQuestion = useCallback(
     (answersByIndex: AnswersByIndex) => {

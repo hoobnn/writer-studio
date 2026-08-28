@@ -190,8 +190,10 @@ const DISCUSSION_HISTORY_BUDGET_CHARS = 8_000
 
 const DISCUSSION_CONTRACT = [
   '输出契约(JSON 对象):',
-  '{ "reply": 给作者的回复, "action": 可省略 }',
+  '{ "reply": 给作者的回复, "questions": 可省略, "action": 可省略 }',
   '通常只输出 reply,与作者讨论、追问、给出方案与权衡。',
+  '当需要作者在方案间裁决时,必须把问题放进 questions,不要只在 reply 里写编号列表。questions 含 1 到 4 个问题,每个问题包含 question、简短 header、2 到 4 个 options 与 multiSelect;每个 option 含 label 和可选 description。',
+  '同一回合 questions 与 action 不能同时出现:作者尚未裁决时不能抢先落提案。',
   '当且仅当讨论已达成明确、可落地的结论时,附带 action 把结论落成提案:',
   '- 结构化资料结论 → "action": { "kind": "plan", "proposal": { 按下述策划契约 } }',
   '- 章节正文结论 → "action": { "kind": "draft", "proposal": { 按下述写手契约 } }',
@@ -202,11 +204,25 @@ const DISCUSSION_CONTRACT = [
 ].join('\n')
 
 /** 讨论历史序列化:靠近现在的消息优先保留。 */
-export function serializeDiscussionHistory(messages: { role: 'user' | 'assistant'; content: string }[]): string {
+export function serializeDiscussionHistory(
+  messages: {
+    role: 'user' | 'assistant'
+    content: string
+    questions?: { question: string; options: { label: string; description?: string }[] }[]
+  }[]
+): string {
   const lines: string[] = []
   let used = 0
   for (const message of [...messages].reverse()) {
-    const line = `[${message.role === 'user' ? '作者' : '工坊'}] ${message.content}`
+    const questions = message.questions
+      ?.map(
+        (question) =>
+          `[待作者选择] ${question.question} | ${question.options
+            .map((option) => `${option.label}${option.description ? ` (${option.description})` : ''}`)
+            .join('; ')}`
+      )
+      .join('\n')
+    const line = `[${message.role === 'user' ? '作者' : '工坊'}] ${message.content}${questions ? `\n${questions}` : ''}`
     if (used + line.length > DISCUSSION_HISTORY_BUDGET_CHARS) break
     lines.unshift(line)
     used += line.length
@@ -215,7 +231,11 @@ export function serializeDiscussionHistory(messages: { role: 'user' | 'assistant
 }
 
 export function buildWorkshopDiscussionPrompt(input: {
-  history: { role: 'user' | 'assistant'; content: string }[]
+  history: {
+    role: 'user' | 'assistant'
+    content: string
+    questions?: { question: string; options: { label: string; description?: string }[] }[]
+  }[]
   context: WorkshopContextData
 }): WorkshopGenerationPrompt {
   const prompt = [

@@ -168,7 +168,7 @@ const MessageLayer = memo(MessageGroupLayer, (previous, next) => {
     previous.registerMessageElement === next.registerMessageElement &&
     previous.isLatestAssistantGroup === next.isLatestAssistantGroup &&
     previous.directAssistantModelsByUserId === next.directAssistantModelsByUserId &&
-    previous.messageTail === next.messageTail
+    previous.messageTailsById === next.messageTailsById
   )
 })
 
@@ -189,7 +189,11 @@ const MessageList = ({ enableSearch = false }: MessageListProps) => {
   // message column; this component both writes it (via the resize observer
   // below) and renders from it.
   const { setForceWideLayout, railGutterPx, setRailGutterPx } = useChatLayoutMode()
-  const { topic, messages, beforeList, messageTail, hasOlder = false, messageNavigation } = data
+  const { topic, messages, beforeList, messageTails, hasOlder = false, messageNavigation } = data
+  const messageTailsById = useMemo(
+    () => (messageTails ? new Map(messageTails.map((tail) => [tail.messageId, tail.content])) : undefined),
+    [messageTails]
+  )
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const { setTimeoutTimer } = useTimer()
   const isMultiSelectMode = selection?.isMultiSelectMode ?? false
@@ -789,10 +793,6 @@ const MessageList = ({ enableSearch = false }: MessageListProps) => {
             onScrollContainerReady={handleScrollContainerReady}
             onReachTop={loadMoreMessages}
             renderItem={([key, groupMessages], index) => {
-              const groupMessageTail =
-                messageTail && groupMessages.some((message) => message.id === messageTail.messageId)
-                  ? messageTail
-                  : undefined
               const props: MessageGroupLayerProps = {
                 groupKey: key,
                 isLive: index >= firstLiveGroupIndex,
@@ -800,7 +800,7 @@ const MessageList = ({ enableSearch = false }: MessageListProps) => {
                 railGutterPx,
                 isLatestAssistantGroup: key === latestAssistantGroupKey,
                 directAssistantModelsByUserId,
-                messageTail: groupMessageTail,
+                messageTailsById,
                 messages: groupMessages,
                 partsByMessageId:
                   index < firstLiveGroupIndex && streamingLayers

@@ -127,6 +127,7 @@ export function createWorkshopDiscussionJobHandler(
           role: 'assistant',
           content: object.reply,
           createdAt: new Date().toISOString(),
+          questions: object.questions,
           proposalId: attachedProposalId
         })
         return { messageId, proposalId: attachedProposalId }

@@ -45,8 +45,31 @@ describe('workshopPrompts 角色指令覆盖', () => {
     expect(custom.prompt).toContain('毒舌编辑。')
     expect(custom.prompt).not.toContain(WORKSHOP_DEFAULT_ROLE_GUIDANCE.discussion)
     expect(custom.system).toContain('只输出一个符合输出契约的 JSON 对象')
+    expect(custom.prompt).toContain('必须把问题放进 questions')
 
     const fallback = buildWorkshopDiscussionPrompt({ history: [], context: contextWith() })
     expect(fallback.prompt).toContain(WORKSHOP_DEFAULT_ROLE_GUIDANCE.discussion)
+  })
+
+  it('讨论历史保留待裁决的问题与选项，供作者回答后的下一回合使用', () => {
+    const prompt = buildWorkshopDiscussionPrompt({
+      history: [
+        {
+          role: 'assistant',
+          content: '需要你裁决。',
+          questions: [
+            {
+              question: '主角保住什么？',
+              options: [{ label: '身份', description: '失去盟友' }, { label: '盟友' }]
+            }
+          ]
+        },
+        { role: 'user', content: '身份' }
+      ],
+      context: contextWith()
+    })
+
+    expect(prompt.prompt).toContain('[待作者选择] 主角保住什么？ | 身份 (失去盟友); 盟友')
+    expect(prompt.prompt).toContain('[作者] 身份')
   })
 })

@@ -83,13 +83,15 @@ const AgentSessionMessages = ({
     }
     return undefined
   }, [messages, partsByMessageId])
-  const messageTail = useMemo(
+  const messageTails = useMemo(
     () =>
       backgroundTaskAnchorMessageId
-        ? {
-            messageId: backgroundTaskAnchorMessageId,
-            content: <AgentSessionBackgroundTasks sessionId={sessionId} />
-          }
+        ? [
+            {
+              messageId: backgroundTaskAnchorMessageId,
+              content: <AgentSessionBackgroundTasks sessionId={sessionId} />
+            }
+          ]
         : undefined,
     [backgroundTaskAnchorMessageId, sessionId]
   )
@@ -125,7 +127,7 @@ const AgentSessionMessages = ({
     respondToolApproval,
     messageNavigation,
     workspacePath: session?.workspace?.path,
-    messageTail
+    messageTails
   })
 
   // Main owns the warm lease per (session × window) and debounces the real teardown, so the

@@ -113,9 +113,11 @@ describe('AgentSessionMessages', () => {
 
     expect(useAgentMessageListProviderValueMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        messageTail: expect.objectContaining({
-          messageId: 'assistant-settled'
-        })
+        messageTails: [
+          expect.objectContaining({
+            messageId: 'assistant-settled'
+          })
+        ]
       })
     )
   })

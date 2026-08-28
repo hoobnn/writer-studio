@@ -587,7 +587,16 @@ describe('MessageGroup', () => {
     const { container } = render(
       <MessageGroup
         messages={messages}
-        messageTail={{ messageId: 'msg-2', content: <div data-testid="message-tail">background tasks</div> }}
+        messageTailsById={
+          new Map([
+            [
+              'msg-2',
+              <div key="msg-2" data-testid="message-tail">
+                background tasks
+              </div>
+            ]
+          ])
+        }
       />
     )
 
@@ -599,10 +608,10 @@ describe('MessageGroup', () => {
     const messages = [createMessage('msg-1', 0, 'vertical'), createMessage('msg-2', 1, 'vertical')]
     const tailContent = <div data-testid="message-tail">background tasks</div>
     const { container, rerender } = render(
-      <MessageGroup messages={messages} messageTail={{ messageId: 'msg-1', content: tailContent }} />
+      <MessageGroup messages={messages} messageTailsById={new Map([['msg-1', tailContent]])} />
     )
 
-    rerender(<MessageGroup messages={messages} messageTail={{ messageId: 'msg-2', content: tailContent }} />)
+    rerender(<MessageGroup messages={messages} messageTailsById={new Map([['msg-2', tailContent]])} />)
 
     expect(container.querySelector('#message-msg-1 [data-testid="message-tail"]')).toBeNull()
     expect(container.querySelector('#message-msg-2 [data-testid="message-tail"]')).toHaveTextContent('background tasks')

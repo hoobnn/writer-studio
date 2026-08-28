@@ -545,11 +545,28 @@ export type WorkshopInvariantReport = z.infer<typeof WorkshopInvariantReportSche
 export const WorkshopInvariantRunInputSchema = z.strictObject({ rootPath: z.string().trim().min(1) })
 export type WorkshopInvariantRunInput = z.infer<typeof WorkshopInvariantRunInputSchema>
 
+export const WorkshopDiscussionOptionSchema = z.strictObject({
+  label: z.string().trim().min(1).max(200),
+  description: z.string().trim().min(1).max(2_000).optional(),
+  preview: z.string().trim().min(1).max(2_000).optional()
+})
+export type WorkshopDiscussionOption = z.infer<typeof WorkshopDiscussionOptionSchema>
+
+export const WorkshopDiscussionQuestionSchema = z.strictObject({
+  question: z.string().trim().min(1).max(2_000),
+  header: z.string().trim().min(1).max(200),
+  options: z.array(WorkshopDiscussionOptionSchema).min(2).max(4),
+  multiSelect: z.boolean().default(false)
+})
+export type WorkshopDiscussionQuestion = z.infer<typeof WorkshopDiscussionQuestionSchema>
+
 export const WorkshopDiscussionMessageSchema = z.strictObject({
   id: WorkshopIdSchema,
   role: z.enum(['user', 'assistant']),
   content: z.string().min(1).max(50_000),
   createdAt: WorkshopTimestampSchema,
+  /** 助手要求作者裁决的结构化选项，直接复用原聊天的选项 Composer。 */
+  questions: z.array(WorkshopDiscussionQuestionSchema).min(1).max(4).optional(),
   /** 助手消息在本回合落盘的提案(讨论即操作的溯源锚点)。 */
   proposalId: WorkshopIdSchema.optional()
 })

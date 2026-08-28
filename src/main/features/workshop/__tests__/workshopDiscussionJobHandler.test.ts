@@ -79,6 +79,37 @@ describe('workshopDiscussionJobHandler', () => {
     expect(await kernel.listProposals()).toEqual([])
   })
 
+  it('选项回合:把结构化问题写入讨论记录,等待作者裁决', async () => {
+    const kernel = await newProject()
+    await appendDiscussionMessage(kernel.rootPath, {
+      id: 'u-options',
+      role: 'user',
+      content: '这个冲突怎么处理？',
+      createdAt: new Date().toISOString()
+    })
+    const questions = [
+      {
+        question: '主角要保住哪一样？',
+        header: '核心代价',
+        options: [
+          { label: '身份', description: '失去盟友' },
+          { label: '盟友', description: '暴露身份' }
+        ],
+        multiSelect: false
+      }
+    ]
+    stubAiService([JSON.stringify({ reply: '两条路都成立，需要你裁决。', questions })])
+
+    const handler = createWorkshopDiscussionJobHandler(new KeyedMutex())
+    await handler.execute(
+      jobContext('turn-options', { rootPath: kernel.rootPath, uniqueModelId: 'cherryai:test' as never }) as never
+    )
+
+    const messages = await readDiscussion(kernel.rootPath)
+    expect(messages.at(-1)?.questions).toEqual(questions)
+    expect(await kernel.listProposals()).toEqual([])
+  })
+
   it('带 action 的回合:落盘提案并在消息上挂 proposalId,溯源含 discussionId', async () => {
     const kernel = await newProject()
     await appendDiscussionMessage(kernel.rootPath, {

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildPlannerChangeset,
   buildWriterChangeset,
+  WorkshopDiscussionOutputSchema,
   WorkshopPlannerOutputSchema,
   WorkshopWriterOutputSchema
 } from '../workshopAgentOutput'
@@ -22,6 +23,30 @@ describe('WorkshopPlannerOutputSchema', () => {
       entities: [{ collection: 'codex/characters', id: 'x', data: { title: '不是人物字段' } }]
     })
     expect(invalid.success).toBe(false)
+  })
+})
+
+describe('WorkshopDiscussionOutputSchema', () => {
+  it('接受结构化选项，并拒绝同回合一边提问一边落提案', () => {
+    const questions = [
+      {
+        question: '主角要保住哪一样？',
+        header: '核心代价',
+        options: [{ label: '身份' }, { label: '盟友' }],
+        multiSelect: false
+      }
+    ]
+    expect(WorkshopDiscussionOutputSchema.safeParse({ reply: '需要你裁决。', questions }).success).toBe(true)
+    expect(
+      WorkshopDiscussionOutputSchema.safeParse({
+        reply: '需要你裁决。',
+        questions,
+        action: {
+          kind: 'draft',
+          proposal: { title: '抢跑提案', chapterId: 'ch-0001', content: '正文' }
+        }
+      }).success
+    ).toBe(false)
   })
 })
 

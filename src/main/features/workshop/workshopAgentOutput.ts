@@ -7,6 +7,7 @@ import {
   type WorkshopChangeset,
   type WorkshopCollection,
   WorkshopCollectionSchema,
+  WorkshopDiscussionQuestionSchema,
   type WorkshopEntity,
   WorkshopIdSchema
 } from '@shared/types/workshop'
@@ -110,10 +111,15 @@ export const WorkshopDiscussionActionSchema = z.discriminatedUnion('kind', [
 ])
 export type WorkshopDiscussionAction = z.infer<typeof WorkshopDiscussionActionSchema>
 
-export const WorkshopDiscussionOutputSchema = z.strictObject({
-  reply: z.string().trim().min(1).max(20_000),
-  action: WorkshopDiscussionActionSchema.optional()
-})
+export const WorkshopDiscussionOutputSchema = z
+  .strictObject({
+    reply: z.string().trim().min(1).max(20_000),
+    questions: z.array(WorkshopDiscussionQuestionSchema).min(1).max(4).optional(),
+    action: WorkshopDiscussionActionSchema.optional()
+  })
+  .refine((output) => !(output.questions && output.action), {
+    message: 'Discussion output cannot ask the author to choose and create a proposal in the same turn'
+  })
 export type WorkshopDiscussionOutput = z.infer<typeof WorkshopDiscussionOutputSchema>
 
 interface BuildChangesetInput {
