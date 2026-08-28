@@ -1,9 +1,7 @@
 ---
 description: Maintainer runbook for preparing, validating, hotfixing, publishing, and synchronizing release branches
 sources:
-  - .github/workflows/prepare-release.yml
   - .github/workflows/preview-release.yml
-  - .github/workflows/release.yml
   - .github/workflows/backport-release-fixes.yml
   - .github/workflows/post-release.yml
   - .github/workflows/ci.yml
