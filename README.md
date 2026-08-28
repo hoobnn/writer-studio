@@ -101,9 +101,3 @@ Writer Studio 得以存在，完全建立在 [**Cherry Studio**](https://github.
 ## 许可证
 
 [AGPL-3.0](LICENSE)，继承自 Cherry Studio。
-
-作为衍生作品，本项目以相同条款分发。如果你分发修改后的版本，或将其作为网络服务运行，
-必须依据 AGPL-3.0 提供对应的源码。
-
-上游项目提供可豁免 AGPL-3.0 要求的商业授权；该授权是你与 CherryHQ（bd@cherry-ai.com）
-之间的约定，**不延伸至本分支**。
