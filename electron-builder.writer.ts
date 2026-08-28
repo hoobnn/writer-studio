@@ -28,7 +28,11 @@ const config = {
   // 覆盖上游 releaseInfo，否则 latest-mac.yml 会带上 Cherry Studio 的 release notes；
   // 每次发版在这里更新下游自己的更新说明
   releaseInfo: {
-    releaseNotes: `Writer Studio ${DISTRIBUTION.version} 首个发布版本。`
+    releaseNotes: [
+      `Writer Studio ${DISTRIBUTION.version}`,
+      '- 工坊讨论支持结构化提问，方案裁决可直接点选',
+      '- 同步上游 Cherry Studio，包含多项修复与性能改进'
+    ].join('\n')
   },
   forceCodeSigning: true,
   // github provider 会与上游 generic publish 的 url 键合并导致 schema 校验失败，
