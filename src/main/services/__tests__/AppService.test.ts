@@ -1,4 +1,5 @@
 import { BaseService } from '@main/core/lifecycle'
+import { DISTRIBUTION } from '@shared/utils/distribution'
 import path from 'path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -40,7 +41,7 @@ import { MockMainPreferenceServiceUtils } from '@test-mocks/main/PreferenceServi
 const { AppService } = await import('../AppService')
 
 const autostartDir = '/mock/sys.appdata.autostart'
-const desktopFile = path.join(autostartDir, 'cherry-studio.desktop')
+const desktopFile = path.join(autostartDir, `${DISTRIBUTION.protocol}.desktop`)
 const linuxFiles = new Set<string>()
 const activeServices: BaseService[] = []
 
