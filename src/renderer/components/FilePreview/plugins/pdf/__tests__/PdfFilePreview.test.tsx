@@ -1,7 +1,9 @@
 import type { AbsoluteFilePath } from '@shared/types/file'
 import { createFilePathHandle } from '@shared/utils/file'
 import { mockRendererLoggerService } from '@test-mocks/RendererLoggerService'
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+// cleanup 需要别名:mock 工厂里 MockPDFViewer 的类字段也叫 cleanup,vitest 的
+// mock 提升器会把字段名误判为该 import 绑定的引用,在 import 初始化前生成别名而 TDZ。
+import { act, cleanup as cleanupRtl, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type React from 'react'
 import type { PropsWithChildren } from 'react'
@@ -265,7 +267,7 @@ describe('PdfFilePreview', () => {
   })
 
   afterEach(() => {
-    cleanup()
+    cleanupRtl()
     vi.restoreAllMocks()
     if (initialDataTheme === null) {
       document.documentElement.removeAttribute('data-theme')
