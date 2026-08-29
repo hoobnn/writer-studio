@@ -24,6 +24,8 @@ import { ChevronDown, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { WORKSHOP_ROLE_LABEL_KEYS } from '../workshopI18nKeys'
+
 interface WorkshopSettingsDialogProps {
   rootPath: string
   open: boolean
@@ -95,7 +97,7 @@ export function WorkshopSettingsDialog({ rootPath, open, onOpenChange, onCommitt
   const [saving, setSaving] = useState(false)
 
   const roleLabel = (role: RoleKey) =>
-    role === 'discussion' ? t('workshop.discussion.title') : t(`workshop.generate.role_${role}`)
+    role === 'discussion' ? t('workshop.discussion.title') : t(WORKSHOP_ROLE_LABEL_KEYS[role])
 
   useEffect(() => {
     if (!open) return

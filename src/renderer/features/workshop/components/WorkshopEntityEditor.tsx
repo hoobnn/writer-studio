@@ -10,6 +10,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { WorkshopBusyApi } from '../hooks/useWorkshopBusy'
+import { WORKSHOP_COLLECTION_LABEL_KEYS } from '../workshopI18nKeys'
 import { isEntityIdTaken, suggestEntityId } from './entityForms/entityIds'
 import type { ReferenceOption } from './entityForms/fields'
 import { ReferenceField, TextField } from './entityForms/fields'
@@ -228,7 +229,7 @@ export function WorkshopEntityEditor({
         <h2 className="min-w-0 truncate font-medium text-base">
           {creating
             ? t('workshop.entity.create_title', {
-                collection: t(`workshop.collections.${collection.replace('/', '_')}`)
+                collection: t(WORKSHOP_COLLECTION_LABEL_KEYS[collection])
               })
             : entity.id}
         </h2>

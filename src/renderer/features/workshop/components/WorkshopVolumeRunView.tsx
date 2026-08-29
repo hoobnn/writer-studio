@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next'
 
 import type { WorkshopJobApi } from '../hooks/useWorkshopJob'
 import { entityLabel } from '../workshopEntityPresenter'
+import { WORKSHOP_VOLUME_STOP_REASON_LABEL_KEYS } from '../workshopI18nKeys'
 
 interface WorkshopVolumeRunViewProps {
   rootPath: string
@@ -204,7 +205,7 @@ export function WorkshopVolumeRunView({
                   <p className="text-sm">
                     {t('workshop.volume.finished', {
                       count: output.completedChapterIds?.length ?? 0,
-                      reason: t(`workshop.volume.reason_${output.stopReason ?? 'volume_done'}`)
+                      reason: t(WORKSHOP_VOLUME_STOP_REASON_LABEL_KEYS[output.stopReason ?? 'volume_done'])
                     })}
                   </p>
                   <div className="space-y-0.5">

@@ -7,6 +7,8 @@ import { ShieldCheck } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { WORKSHOP_INVARIANT_RULE_LABEL_KEYS } from '../workshopI18nKeys'
+
 interface WorkshopInvariantPanelProps {
   rootPath: string
   /** 正史 head 变化时由父组件传入,用于提示报告已过期。 */
@@ -81,7 +83,9 @@ export function WorkshopInvariantPanel({
         {(report?.findings ?? []).map((finding) => (
           <div key={finding.key} className="rounded-lg border border-border bg-card px-3 py-2">
             <div className="flex items-center gap-2">
-              <Badge variant={SEVERITY_BADGE[finding.severity]}>{t(`workshop.invariants.rule_${finding.rule}`)}</Badge>
+              <Badge variant={SEVERITY_BADGE[finding.severity]}>
+                {t(WORKSHOP_INVARIANT_RULE_LABEL_KEYS[finding.rule])}
+              </Badge>
             </div>
             <p className="mt-1 text-sm leading-6">{finding.detail}</p>
             {finding.chapterIds.length > 0 || finding.entityIds.length > 0 ? (

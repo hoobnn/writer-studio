@@ -3,6 +3,8 @@ import type { WorkshopTimelineEntry } from '@shared/types/workshop'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { WORKSHOP_TIMELINE_KIND_LABEL_KEYS } from '../workshopI18nKeys'
+
 interface WorkshopTimelinePanelProps {
   headCommit: string
   entries: WorkshopTimelineEntry[]
@@ -22,7 +24,7 @@ export function WorkshopTimelinePanel({ headCommit, entries, busy, onRollback }:
           <div key={entry.commit} className="rounded-lg border border-border bg-card px-3 py-2">
             <div className="flex items-center gap-2">
               <span className="min-w-0 flex-1 truncate text-sm">{entry.title}</span>
-              <Badge variant="outline">{t(`workshop.timeline.kind_${entry.kind}`)}</Badge>
+              <Badge variant="outline">{t(WORKSHOP_TIMELINE_KIND_LABEL_KEYS[entry.kind])}</Badge>
             </div>
             <div className="mt-1 flex items-center justify-between gap-2">
               <span className="text-muted-foreground text-xs">

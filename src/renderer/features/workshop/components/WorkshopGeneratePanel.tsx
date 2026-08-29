@@ -7,6 +7,7 @@ import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useWorkshopJob } from '../hooks/useWorkshopJob'
+import { WORKSHOP_ROLE_LABEL_KEYS } from '../workshopI18nKeys'
 
 interface WorkshopGeneratePanelProps {
   rootPath: string
@@ -74,7 +75,7 @@ export function WorkshopGeneratePanel({ rootPath, selectedChapterId, onProposalA
         <SelectContent>
           {ROLES.map((candidate) => (
             <SelectItem key={candidate} value={candidate} disabled={candidate === 'cycle' && !selectedChapterId}>
-              {t(`workshop.generate.role_${candidate}`)}
+              {t(WORKSHOP_ROLE_LABEL_KEYS[candidate])}
             </SelectItem>
           ))}
         </SelectContent>

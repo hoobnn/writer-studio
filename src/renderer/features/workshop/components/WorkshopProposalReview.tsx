@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next'
 
 import type { WorkshopBusyApi } from '../hooks/useWorkshopBusy'
 import { chapterIdFromDiffPath } from '../workshopEntityPresenter'
+import { WORKSHOP_PROPOSAL_STATUS_LABEL_KEYS } from '../workshopI18nKeys'
 
 interface WorkshopProposalReviewProps {
   rootPath: string
@@ -118,7 +119,7 @@ export function WorkshopProposalReview({
         <h2 className="min-w-0 flex-1 truncate font-medium text-base">{proposal.title}</h2>
         <Badge
           variant={proposal.status === 'pending' ? 'default' : proposal.status === 'applied' ? 'secondary' : 'outline'}>
-          {t(`workshop.proposals.status_${proposal.status}`)}
+          {t(WORKSHOP_PROPOSAL_STATUS_LABEL_KEYS[proposal.status])}
         </Badge>
         {proposal.stale ? <Badge variant="destructive">{t('workshop.proposals.stale')}</Badge> : null}
         {touchedChapterIds.map((chapterId) => (

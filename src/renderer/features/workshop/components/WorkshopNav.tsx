@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next'
 import type { WorkshopEntityIndex } from '../hooks/useWorkshopData'
 import type { WorkshopView } from '../hooks/useWorkshopView'
 import { entityLabel, entitySubtitle } from '../workshopEntityPresenter'
+import { WORKSHOP_COLLECTION_LABEL_KEYS, WORKSHOP_NAV_GROUP_LABEL_KEYS } from '../workshopI18nKeys'
 
 interface WorkshopNavProps {
   chapterIds: string[]
@@ -168,7 +169,7 @@ export function WorkshopNav({
           {NAV_GROUPS.map((group) => (
             <AccordionItem key={group.id} value={group.id}>
               <AccordionTrigger className="py-2 font-medium text-muted-foreground text-xs uppercase">
-                {t(`workshop.nav.group_${group.id}`)}
+                {t(WORKSHOP_NAV_GROUP_LABEL_KEYS[group.id])}
               </AccordionTrigger>
               <AccordionContent className="space-y-2 pb-2">
                 {group.collections.map((collection) => {
@@ -178,7 +179,7 @@ export function WorkshopNav({
                   if (searching && list.length === 0) return null
                   const visibleCount = searching ? list.length : (visibleCounts[collection] ?? NAV_PAGE_SIZE)
                   const visible = list.slice(0, visibleCount)
-                  const collectionLabel = t(`workshop.collections.${collection.replace('/', '_')}`)
+                  const collectionLabel = t(WORKSHOP_COLLECTION_LABEL_KEYS[collection])
                   return (
                     <div key={collection}>
                       <div className="flex items-center justify-between gap-1 px-2 py-1">

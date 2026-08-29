@@ -4,6 +4,8 @@ import { ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { WORKSHOP_PROPOSAL_FILTER_LABEL_KEYS, WORKSHOP_PROPOSAL_STATUS_LABEL_KEYS } from '../workshopI18nKeys'
+
 interface WorkshopProposalPanelProps {
   proposals: WorkshopProposal[]
   /** 刚生成的提案 id,列表中短暂高亮。 */
@@ -30,7 +32,7 @@ export function WorkshopProposalPanel({ proposals, highlightId, onOpen }: Worksh
           onValueChange={setFilter}
           options={FILTERS.map((candidate) => ({
             value: candidate,
-            label: t(`workshop.proposals.filter_${candidate}`)
+            label: t(WORKSHOP_PROPOSAL_FILTER_LABEL_KEYS[candidate])
           }))}
         />
       </div>
@@ -51,7 +53,7 @@ export function WorkshopProposalPanel({ proposals, highlightId, onOpen }: Worksh
                 variant={
                   proposal.status === 'pending' ? 'default' : proposal.status === 'applied' ? 'secondary' : 'outline'
                 }>
-                {t(`workshop.proposals.status_${proposal.status}`)}
+                {t(WORKSHOP_PROPOSAL_STATUS_LABEL_KEYS[proposal.status])}
               </Badge>
               {proposal.stale ? <Badge variant="destructive">{t('workshop.proposals.stale')}</Badge> : null}
               <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
