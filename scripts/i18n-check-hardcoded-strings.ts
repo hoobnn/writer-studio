@@ -12,6 +12,9 @@ const MAIN_DIR = path.join(__dirname, '../src/main')
 const EXTENSIONS = ['.tsx', '.ts']
 const IGNORED_DIRS = ['__tests__', 'node_modules', 'i18n', 'locales', 'types', 'assets']
 const IGNORED_FILES = ['*.test.ts', '*.test.tsx', '*.d.ts', '*prompts*.ts', '*Prompts*.ts']
+// 下游 workshop 领域是中文优先:LLM 指令、版本历史说明、审校/不变量报告等领域文本,
+// 不属于 UI 字符串,不做 i18n。仅豁免 main 进程,renderer 侧 workshop UI 仍受检查。
+const MAIN_IGNORED_PATHS = ['features/workshop/', 'ai/structuredOutput.ts']
 
 // 'content' is handled specially - only checked for specific components
 const UI_ATTRIBUTES = [
@@ -329,6 +332,10 @@ function shouldSkipFile(filePath: string, baseDir: string): boolean {
   const relativePath = path.relative(baseDir, filePath)
 
   if (IGNORED_DIRS.some((dir) => relativePath.includes(dir))) {
+    return true
+  }
+
+  if (baseDir === MAIN_DIR && MAIN_IGNORED_PATHS.some((prefix) => relativePath.startsWith(prefix))) {
     return true
   }
 
