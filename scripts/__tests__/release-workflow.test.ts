@@ -888,25 +888,8 @@ describe('release publication state', () => {
 describe('release workflow gates', () => {
   const workflowRoot = path.resolve(import.meta.dirname, '../..', '.github/workflows')
 
-  it('revalidates the selected release branch head before draft mutation and tag movement', () => {
-    const workflow = parse(fs.readFileSync(path.join(workflowRoot, 'release.yml'), 'utf8'))
-    const finalizeSteps = workflow.jobs['finalize-build'].steps
-    const headStep = finalizeSteps.find((step: { name?: string }) => step.name === 'Revalidate current release head')
-    const releaseIndex = finalizeSteps.findIndex(
-      (step: { name?: string }) => step.name === 'Create or update draft release'
-    )
-    const uploadedStep = finalizeSteps.find((step: { name?: string }) => step.name === 'Validate uploaded draft')
-    const tagStep = finalizeSteps.find(
-      (step: { name?: string }) => step.name === 'Move draft tag with lease after artifact upload'
-    )
-
-    expect(finalizeSteps.indexOf(headStep)).toBeLessThan(releaseIndex)
-    expect(headStep.run).toContain('BRANCH_SHA="$BRANCH_SHA"')
-    expect(uploadedStep.run).toContain('BRANCH_SHA="$BRANCH_SHA"')
-    expect(tagStep.run).toContain('BRANCH_SHA="$BRANCH_SHA"')
-    expect(tagStep.run).toContain('node scripts/release/validate-release-state.js build-completion')
-  })
-
+  // 上游 release.yml / prepare-release.yml 在本分支已删除（发布走 release-writer.yml），
+  // 对应的两个工作流契约测试随之移除。
   it('reports a merged hotfix contract failure before release resolution', () => {
     const workflow = parse(fs.readFileSync(path.join(workflowRoot, 'backport-release-fixes.yml'), 'utf8'))
     const backportSteps = workflow.jobs.backport.steps
@@ -954,27 +937,9 @@ describe('release workflow gates', () => {
     }
   })
 
-  it('revalidates the downloaded preparation artifact before creating the release branch', () => {
-    const workflow = parse(fs.readFileSync(path.join(workflowRoot, 'prepare-release.yml'), 'utf8'))
-    const validationStep = workflow.jobs.publish.steps.find(
-      (step: { name?: string }) => step.name === 'Validate prepared release artifact'
-    )
-
-    expect(validationStep.run.indexOf('fs.copyFileSync')).toBeLessThan(
-      validationStep.run.indexOf('validate-prepared-release.js')
-    )
-    expect(validationStep.run).toContain('--include-generated-manifest')
-  })
-
   it('runs release workflow contract tests for release-workflow-only pull requests', () => {
     const workflow = fs.readFileSync(path.join(workflowRoot, 'ci.yml'), 'utf8')
-    for (const workflowName of [
-      'backport-release-fixes.yml',
-      'post-release.yml',
-      'prepare-release.yml',
-      'preview-release.yml',
-      'release.yml'
-    ]) {
+    for (const workflowName of ['backport-release-fixes.yml', 'post-release.yml', 'preview-release.yml']) {
       expect(workflow).toContain(`- '.github/workflows/${workflowName}'`)
     }
   })
