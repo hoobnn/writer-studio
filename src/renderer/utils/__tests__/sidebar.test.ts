@@ -82,9 +82,10 @@ describe('sidebar config helpers', () => {
     ])
   })
 
-  it('keeps a stored Agent-first order when required Chat is already present', () => {
+  it('keeps a stored Agent-first order when required apps are already present', () => {
     expect(
       getOrderedVisibleSidebarFavoriteItems([
+        appFavorite('writer'),
         appFavorite('agents'),
         appFavorite('assistants'),
         appFavorite('translate'),
@@ -92,6 +93,7 @@ describe('sidebar config helpers', () => {
         appFavorite('knowledge')
       ])
     ).toEqual([
+      appFavorite('writer'),
       appFavorite('agents'),
       appFavorite('assistants'),
       appFavorite('translate'),

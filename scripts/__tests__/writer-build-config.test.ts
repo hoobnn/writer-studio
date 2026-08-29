@@ -15,17 +15,20 @@ describe('Writer Studio build config', () => {
       extraMetadata: {
         name: DISTRIBUTION.appName,
         productName: DISTRIBUTION.productName,
-        version: '0.1.0'
+        version: DISTRIBUTION.version
       }
     })
   })
 
-  it('requires signing and disables the upstream release pipeline', () => {
+  it('requires signing and replaces the upstream release pipeline with fork releases', () => {
     expect(writerBuildConfig.forceCodeSigning).toBe(true)
-    expect(writerBuildConfig.publish).toBeNull()
+    expect(writerBuildConfig.publish).toEqual({
+      provider: 'generic',
+      url: 'https://github.com/hoobnn/writer-studio/releases/latest/download'
+    })
     expect(writerBuildConfig.afterSign).toBeNull()
     expect(writerBuildConfig.mac).toMatchObject({
-      bundleShortVersion: '0.1.0',
+      bundleShortVersion: DISTRIBUTION.version,
       bundleVersion: '1',
       notarize: true,
       sign: 'scripts/writer-mac-sign.js'

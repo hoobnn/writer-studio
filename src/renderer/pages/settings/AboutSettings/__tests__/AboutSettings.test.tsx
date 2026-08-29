@@ -117,19 +117,20 @@ describe('AboutSettings repository controls accessibility', () => {
     })
   })
 
-  it('names the GitHub icon and app logo by their repository destination and hides decorative media', async () => {
+  it('names the GitHub icon and app logo controls and hides decorative media', async () => {
     const user = userEvent.setup()
     await renderAboutSettings()
 
-    const repositoryButtons = screen.getAllByRole('button', { name: 'settings.about.repository' })
-    expect(repositoryButtons).toHaveLength(2)
+    // 下游品牌:logo 按钮以产品名命名，GitHub 图标按钮以仓库命名
+    const repositoryButton = screen.getByRole('button', { name: 'settings.about.repository' })
+    const logoButton = screen.getByRole('button', { name: 'Writer Studio' })
     expect(screen.queryByRole('button', { name: 'Cherry Studio' })).not.toBeInTheDocument()
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
 
-    await user.click(repositoryButtons[0])
+    await user.click(repositoryButton)
     expect(mocks.request).toHaveBeenCalledWith('system.shell.open_website', REPOSITORY_URL)
 
-    await user.click(repositoryButtons[1])
+    await user.click(logoButton)
     expect(mocks.request).toHaveBeenCalledWith('system.shell.open_website', REPOSITORY_URL)
   })
 })
