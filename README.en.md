@@ -2,66 +2,74 @@
 
 [简体中文](README.md) | **English**
 
-# ✍️ Writer Studio
+# Writer Studio
 
-**A local-first workspace for writing long-form fiction, built on [Cherry Studio](https://github.com/CherryHQ/cherry-studio).**
+**A local-first app for writing long-form fiction, built on [Cherry Studio](https://github.com/CherryHQ/cherry-studio).**
 
-Your manuscript, story bible, and revision history stay in plain files on your own disk.
-The model only ever sees the context you can inspect.
+Your manuscript, story bible and revision history are plain files on your own disk.
+You can see the context sent to the model before it goes out.
 
 </div>
 
 > [!NOTE]
-> This is a **modified fork** of [Cherry Studio](https://github.com/CherryHQ/cherry-studio) and is
-> **not affiliated with or endorsed by CherryHQ**. It adds the Writer Studio workspace and rebrands
-> the application; upstream vendor services, analytics, and auto-updates are disabled.
-> Licensed under **AGPL-3.0**, inherited from the upstream project.
+> This is a **modified version** of [Cherry Studio](https://github.com/CherryHQ/cherry-studio) and is
+> **not affiliated with or endorsed by CherryHQ**. I added the Writer Studio workspace, changed the name
+> and icon, and turned off upstream vendor services, analytics and auto-updates.
+> It keeps the upstream **AGPL-3.0** license.
 
-## Why this exists
+## Why I made this
 
-Long-form fiction breaks the assumptions most chat UIs are built on. Five problems keep recurring:
+When I wrote long fiction with AI, things fell apart once the draft got long. The prose drifted away
+from the setting notes and outline. I couldn't tell what the model had actually seen, or why an
+important detail was missing. AI output overwrote paragraphs I had already revised. A chat window is
+fine for questions, less so for managing a few hundred thousand words, so I built a writing workspace
+on top of Cherry Studio.
 
-1. Prose, story bible, outline, and continuity notes drift apart as the draft grows.
-2. You cannot tell what the model actually saw, or why a key detail was left out.
-3. AI output overwrites your words, and stale suggestions get applied to prose that has since changed.
-4. Your material is locked to a platform, making it costly to switch tools or branch a storyline.
-5. The more features a tool adds, the more the writing surface shrinks.
+## Features
 
-Writer Studio addresses these directly rather than adding another chat window.
+### A book is a folder
 
-## What it does
+Each book is a directory on disk. The manifest, story bible, outline, continuity notes, manuscript,
+proposals and snapshots are JSON and text files you can open, back up, diff, or copy to another
+machine. None of it lives only in the app's database.
 
-**Portable projects.** A book is a folder on your disk. Manifest, story bible, outline, continuity,
-manuscript, proposals, and history are all plain JSON and text you can read, back up, diff, or move
-to another machine. Nothing about your book lives only in an app database.
+### AI output starts as a proposal
 
-**AI proposes, never overwrites.** Generation always produces a *proposal*. You see the sources it
-used, a preview, and a line-level diff against your prose before anything is applied. Only an applied
-proposal advances canon — and each operation has a strict target: drafts and rewrites can replace,
-continuations can only append, and analytical proposals cannot touch prose at all.
+Generated text never goes straight into the manuscript. It becomes a proposal first, and before you
+apply it you can see which sources it used, the output, and a line-by-line diff against your prose.
+Only applied proposals change the manuscript, and each kind of operation has a fixed scope: drafts and
+rewrites can replace text, continuations can only append, and analysis can't touch the prose.
 
-**You can see the exact context.** Before generating, preview the precise text and story data that
-will be sent, with per-source budget accounting, truncation receipts, and which lorebook entries
-activated. No guessing about what the model received.
+### Preview what the model will see
 
-**Revision gates.** Prose and each structured document carry their own content revision. A proposal
-built against an older draft is refused rather than silently applied over your newer text.
+Before generating, you can preview the exact text and story data that will be sent, including how much
+of the budget each source takes, what got truncated, and which lorebook entries fired.
 
-**Deterministic continuity review.** A typed checker — not a model — reports continuity findings,
-coverage, and author waivers. Results are saved alongside the project and travel with it.
+### Proposals built on old drafts are refused
 
-**History and recovery.** Chapters snapshot as you write, with list, read, and restore; restoring
-first snapshots the current text. Unsaved drafts and in-flight generation jobs survive a restart.
+The manuscript and every structured document carry a revision number. A proposal generated from an
+older version is rejected when you try to apply it, so it can't quietly overwrite newer edits.
 
-**A workspace that stays out of the way.** Collapsible chapter and copilot panes, plus a focus mode
-that clears both and restores your layout on exit.
+### Continuity checks are code
 
-## Built on Cherry Studio
+Continuity findings, coverage and author waivers come from a typed checker, not a model. The results
+are saved with the book and move with it.
 
-Everything the upstream project provides is still here — a mature desktop AI client with broad
-provider support (OpenAI, Anthropic, Gemini, local models via Ollama and LM Studio), MCP servers,
-knowledge bases, document processing, and translation. Writer Studio adds a writing workspace on top
-of that foundation rather than reinventing it.
+### Snapshots
+
+Chapters are snapshotted as you write, and you can view or restore them; restoring saves the current
+text first. Unsaved drafts and running generation jobs survive a restart.
+
+### Layout
+
+The chapter and Copilot panes both collapse, and focus mode hides both at once and puts your layout
+back when you exit.
+
+## Relationship to Cherry Studio
+
+Everything Cherry Studio does is still there: many model providers (OpenAI, Anthropic, Gemini, and
+local models through Ollama and LM Studio), MCP, knowledge bases, document processing and translation.
+Writer Studio adds the writing workspace on top.
 
 ## Development
 
@@ -74,34 +82,31 @@ pnpm dev
 | --- | --- |
 | `pnpm lint` | Format, lint, typecheck, and i18n check |
 | `pnpm test` | Full test suite |
-| `pnpm build:check` | The complete gate: lint + docs + tests |
+| `pnpm build:check` | Full gate: lint + docs + tests |
 
-Design notes and architecture decisions live in [`docs/writer/`](docs/writer/):
+Design notes and architecture decisions are in [`docs/writer/`](docs/writer/) (in Chinese):
 
-- [Architecture decisions](docs/writer/architecture.md) — portable projects, proposal gating, context assembly
-- [Upstream sync](docs/writer/upstream-sync.md) — branch layout and how changes are merged from Cherry Studio
-- [Product benchmark](docs/writer/product-benchmark.md) — comparison against other AI writing tools
+- [Architecture decisions](docs/writer/architecture.md): book folders, proposal gating, context assembly
+- [Upstream sync](docs/writer/upstream-sync.md): branch layout and how Cherry Studio changes are merged
+- [Product benchmark](docs/writer/product-benchmark.md): comparison with other AI writing tools
 
 ## Contributing
 
-Issues and pull requests are welcome. Development targets the `product/writer` branch.
+Issues and pull requests are welcome. Development happens on the `product/writer` branch.
 
-Bugs in Cherry Studio itself belong
-[upstream](https://github.com/CherryHQ/cherry-studio/issues), not here.
+Bugs in Cherry Studio itself belong [upstream](https://github.com/CherryHQ/cherry-studio/issues).
 
 ## Acknowledgements
 
-Writer Studio exists because of [**Cherry Studio**](https://github.com/CherryHQ/cherry-studio) and
-the work of [its contributors](https://github.com/CherryHQ/cherry-studio/graphs/contributors).
+This project rests entirely on [Cherry Studio](https://github.com/CherryHQ/cherry-studio) and the work
+of [its contributors](https://github.com/CherryHQ/cherry-studio/graphs/contributors).
 
-The upstream project provides the entire foundation this builds on: the Electron application shell,
-the AI provider layer, the data and IPC architecture, the component library, and years of
-accumulated engineering. This fork changes a small fraction of that surface and inherits the rest.
-Sincere thanks to the CherryHQ team and everyone who has contributed to it.
+The Electron shell, the model provider layer, the data and IPC architecture and the component library
+all come from years of upstream work; I changed only a small part of it. Thanks to the CherryHQ team
+and everyone who has contributed.
 
-If you want a general-purpose AI desktop client, use
-[Cherry Studio](https://github.com/CherryHQ/cherry-studio) — it is the better choice, and it is
-actively maintained by a real team.
+If you want a general-purpose AI desktop client, use [Cherry Studio](https://github.com/CherryHQ/cherry-studio)
+directly. It's a better fit, and a full team maintains it.
 
 ## License
 

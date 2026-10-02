@@ -2,62 +2,68 @@
 
 **简体中文** | [English](README.en.md)
 
-# ✍️ Writer Studio
+# Writer Studio
 
-**一个本地优先的长篇小说写作工作区，基于 [Cherry Studio](https://github.com/CherryHQ/cherry-studio) 构建。**
+**本地优先的长篇小说写作工具，基于 [Cherry Studio](https://github.com/CherryHQ/cherry-studio) 改的。**
 
-正文、故事圣经与修订历史都以普通文件保存在你自己的磁盘上。
-模型看到的每一段上下文，你都可以事先查看。
+正文、故事圣经和修订历史都是你硬盘上的普通文件。
+每次发给模型的上下文，发之前都能看到。
 
 </div>
 
 > [!NOTE]
-> 本仓库是 [Cherry Studio](https://github.com/CherryHQ/cherry-studio) 的**修改版分支**，
-> **与 CherryHQ 无隶属关系，也未获其背书**。它新增了 Writer Studio 工作区并更换了品牌标识；
-> 上游的厂商服务、数据分析与自动更新均已关闭。
-> 依据上游项目继承 **AGPL-3.0** 授权。
+> 这是 [Cherry Studio](https://github.com/CherryHQ/cherry-studio) 的**修改版**，
+> **与 CherryHQ 没有隶属关系，也没有得到其认可**。我在上面加了 Writer Studio 写作区，换了名字和图标，
+> 关掉了上游的厂商服务、数据统计和自动更新。许可证沿用上游的 **AGPL-3.0**。
 
 ## 为什么做这个
 
-长篇小说写作会打破多数对话式界面的设计前提。有五类问题反复出现：
+我用 AI 写长篇时，稿子一长就开始出问题：正文和设定、大纲对不上；不知道模型这次到底看了哪些
+内容，关键设定为什么没带上；AI 的输出把我改过的段落又盖回去。聊天窗口适合问答，不太适合管一部
+几十万字的稿子。所以我在 Cherry Studio 上做了一个专门写小说的工作区。
 
-1. 正文、故事圣经、大纲与连续性记录会随着稿件增长逐渐分叉。
-2. 你无从得知模型实际看到了什么，也不知道关键设定为何被遗漏。
-3. AI 的输出会覆盖你的文字，过期的建议还可能被套用到已经改动过的正文上。
-4. 创作资料被平台锁定，更换工具或另起一条故事线的成本很高。
-5. 功能越加越多，真正用来码字的空间反而被压缩。
+## 功能
 
-Writer Studio 直接针对这些问题，而不是再加一个聊天窗口。
+### 作品就是一个文件夹
 
-## 它做什么
+一本书对应硬盘上的一个目录。manifest、故事圣经、大纲、连续性记录、正文、提案和历史快照，
+都是可以直接打开看的 JSON 和文本，能备份、能 diff、能拷到另一台电脑。作品内容不会只存在应用的
+数据库里。
 
-**可移植的作品目录。** 一本书就是磁盘上的一个文件夹。manifest、故事圣经、大纲、连续性记录、
-正文、提案与历史快照，全部是你可以直接阅读、备份、diff 或迁移到另一台机器的纯 JSON 与文本。
-作品的任何部分都不会只存在于应用数据库里。
+### AI 的输出先变成提案
 
-**AI 只提案，绝不直接覆写。** 生成过程永远先产出一份*提案*。在任何内容被应用之前，你会看到它
-用了哪些来源、生成结果预览，以及与你正文的行级 diff。只有被应用的提案才会推进正史——而且每种
-操作都有严格的写入目标：草稿与改写只能替换，续写只能追加，分析类提案完全不能改动正文。
+生成结果不会直接写进正文，而是先变成一份提案。应用之前，你能看到它用了哪些资料、生成了什么、
+和正文逐行的 diff。只有应用过的提案才会改动正文，而且每种操作能改的范围是固定的：起草和改写
+可以替换，续写只能往后加，分析类提案不能动正文。
 
-**可以查看确切的上下文。** 生成前可以预览将要发送的确切正文与故事数据，包含逐来源的预算占用、
-截断回执，以及哪些 lorebook 条目被激活。模型收到了什么，不用猜。
+### 发给模型的内容可以先看
 
-**修订门禁。** 正文与每份结构化文档各自带有内容修订标识。基于旧稿生成的提案会被拒绝，
-而不是静默地覆盖你更新过的文字。
+生成前可以预览这次要发送的正文和设定，包括每个来源占了多少预算、哪些内容被截断、哪些
+lorebook 条目被触发。
 
-**确定性连续性检查。** 由类型化检查器（而非模型）给出连续性问题、覆盖范围与作者豁免记录，
-结果与作品保存在一起，可随作品迁移。
+### 旧稿上的提案会被拒
 
-**历史与恢复。** 章节在写作过程中自动生成快照，支持列出、读取与恢复；恢复前会先为当前正文
-反向生成一份快照。未保存的草稿与进行中的生成任务在重启后仍可恢复。
+正文和每份结构化文档都带有修订号。如果提案是基于旧版本生成的，应用时会被拒绝，不会悄悄覆盖
+你后来改过的文字。
 
-**不碍事的工作区。** 章节栏与 Copilot 栏均可折叠，专注模式可一键收起两侧，退出时恢复原有布局。
+### 连续性检查用代码做
 
-## 基于 Cherry Studio
+连续性问题、覆盖范围和作者豁免由类型化的检查器给出，不靠模型判断。检查结果和作品存在一起，
+作品搬到哪里结果跟到哪里。
 
-上游项目提供的能力全部保留——一个成熟的桌面 AI 客户端，支持广泛的服务商（OpenAI、Anthropic、
-Gemini，以及通过 Ollama 和 LM Studio 运行的本地模型）、MCP 服务、知识库、文档处理与翻译。
-Writer Studio 是在这个基座之上增加写作工作区，而不是重新造一遍。
+### 历史快照
+
+写作过程中会自动给章节打快照，可以查看和恢复；恢复之前会先给当前正文再存一份。没保存的草稿和
+正在跑的生成任务，重启之后还在。
+
+### 界面
+
+章节栏和 Copilot 栏都能收起，专注模式一下收起两边，退出后恢复原来的布局。
+
+## 和 Cherry Studio 的关系
+
+Cherry Studio 原有的功能都还在：多家模型服务（OpenAI、Anthropic、Gemini，以及通过 Ollama、
+LM Studio 跑的本地模型）、MCP、知识库、文档处理和翻译。Writer Studio 只是在它上面加了写作区。
 
 ## 开发
 
@@ -69,35 +75,38 @@ pnpm dev
 | 命令 | 用途 |
 | --- | --- |
 | `pnpm lint` | 格式化、lint、类型检查与 i18n 校验 |
-| `pnpm test` | 完整测试套件 |
-| `pnpm build:check` | 完整门禁：lint + docs + 测试 |
+| `pnpm test` | 完整测试 |
+| `pnpm build:check` | 完整门禁：lint + 文档 + 测试 |
 
-设计说明与架构决策见 [`docs/writer/`](docs/writer/)：
+设计说明和架构决策在 [`docs/writer/`](docs/writer/)：
 
-- [架构决策](docs/writer/architecture.md) — 可移植作品目录、提案门禁、上下文装配
-- [上游同步](docs/writer/upstream-sync.md) — 分支布局与从 Cherry Studio 合并变更的方式
-- [产品对照](docs/writer/product-benchmark.md) — 与其他 AI 写作工具的对比
+- [架构决策](docs/writer/architecture.md)：作品目录、提案门禁、上下文装配
+- [上游同步](docs/writer/upstream-sync.md)：分支布局，以及怎么合并 Cherry Studio 的更新
+- [产品对照](docs/writer/product-benchmark.md)：和其他 AI 写作工具的对比
 
 ## 参与贡献
 
-欢迎提交 issue 与 pull request。开发面向 `product/writer` 分支。
+欢迎提 issue 和 pull request，开发分支是 `product/writer`。
 
-Cherry Studio 自身的缺陷请提交到
-[上游仓库](https://github.com/CherryHQ/cherry-studio/issues)，而不是这里。
+Cherry Studio 本身的 bug 请提到[上游仓库](https://github.com/CherryHQ/cherry-studio/issues)。
 
 ## 致谢
 
-Writer Studio 得以存在，完全建立在 [**Cherry Studio**](https://github.com/CherryHQ/cherry-studio)
-及[其贡献者](https://github.com/CherryHQ/cherry-studio/graphs/contributors)的工作之上。
+这个项目整个建立在 [Cherry Studio](https://github.com/CherryHQ/cherry-studio) 和
+[它的贡献者们](https://github.com/CherryHQ/cherry-studio/graphs/contributors)的工作之上。
 
-上游项目提供了这个项目所依赖的全部基座：Electron 应用外壳、AI 服务商接入层、数据与 IPC 架构、
-组件库，以及多年积累的工程实现。本分支只改动了其中很小一部分，其余全部继承自上游。
-在此向 CherryHQ 团队以及每一位为之贡献过的人致以诚挚的谢意。
+Electron 外壳、模型服务接入、数据与 IPC 架构、组件库，都来自上游多年的积累，我只改了其中很小
+一部分。感谢 CherryHQ 团队和每一位贡献者。
 
-如果你需要的是一个通用的 AI 桌面客户端，请直接使用
-[Cherry Studio](https://github.com/CherryHQ/cherry-studio)——那是更好的选择，
-而且由一支真正的团队在持续维护。
+如果你要的是一个通用的 AI 桌面客户端，直接用 [Cherry Studio](https://github.com/CherryHQ/cherry-studio)
+更合适，它有一个完整的团队在维护。
 
 ## 许可证
 
-[AGPL-3.0](LICENSE)，继承自 Cherry Studio。
+[AGPL-3.0](LICENSE)，沿用 Cherry Studio 的许可。
+
+作为衍生作品，本项目按相同条款分发。如果你分发修改后的版本，或者把它作为网络服务运行，需要按
+AGPL-3.0 提供对应的源代码。
+
+上游提供可以免除 AGPL-3.0 要求的商业授权，那是你和 CherryHQ（bd@cherry-ai.com）之间的事，
+不适用于这个分支。
