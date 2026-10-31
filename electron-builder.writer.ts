@@ -30,8 +30,8 @@ const config = {
   releaseInfo: {
     releaseNotes: [
       `Writer Studio ${DISTRIBUTION.version}`,
-      '- 工坊讨论支持结构化提问，方案裁决可直接点选',
-      '- 同步上游 Cherry Studio，包含多项修复与性能改进'
+      '- 升级 Axios 至 1.20.0，包含请求配置与传输可靠性修复',
+      '- 升级数据分类工具的 glob、minimatch 和 brace-expansion 依赖'
     ].join('\n')
   },
   forceCodeSigning: true,
@@ -44,7 +44,7 @@ const config = {
   afterSign: null,
   mac: {
     bundleShortVersion: DISTRIBUTION.version,
-    bundleVersion: '1',
+    bundleVersion: '2',
     icon: 'build/writer/icon.png',
     notarize: true,
     sign: 'scripts/writer-mac-sign.js'

@@ -7,5 +7,5 @@ export const DISTRIBUTION = Object.freeze({
   updatesEnabled: true,
   upstreamServicesEnabled: false,
   vendorOAuthEnabled: false,
-  version: '0.2.0'
+  version: '0.2.1'
 })
